@@ -14,9 +14,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import com.woowa.weatherfit.R
 import com.woowa.weatherfit.presentation.navigation.BottomNavItem
 import com.woowa.weatherfit.ui.theme.BottomNavBackground
 import com.woowa.weatherfit.ui.theme.BottomNavSelected
@@ -38,7 +40,7 @@ fun WeatherFitBottomBar(
                 onClick = { onNavigate(item.route) },
                 icon = {
                     Icon(
-                        imageVector = getIconForItem(item, isSelected),
+                        painter = getIconForItem(item, isSelected),
                         contentDescription = item.title,
                         modifier = Modifier.size(24.dp)
                     )
@@ -57,10 +59,19 @@ fun WeatherFitBottomBar(
 }
 
 @Composable
-private fun getIconForItem(item: BottomNavItem, isSelected: Boolean): ImageVector {
+private fun getIconForItem(item: BottomNavItem, isSelected: Boolean): Painter {
     return when (item) {
-        BottomNavItem.HOME -> if (isSelected) Icons.Filled.Home else Icons.Outlined.Home
-        BottomNavItem.CLOTH -> if (isSelected) Icons.Filled.Checkroom else Icons.Outlined.Checkroom
-        BottomNavItem.CODY -> if (isSelected) Icons.Filled.Checkroom else Icons.Outlined.Checkroom
+        BottomNavItem.HOME ->
+            if (isSelected) painterResource(R.drawable.home_1)
+            else painterResource(R.drawable.home)
+
+        BottomNavItem.CLOTH ->
+            if (isSelected) painterResource(R.drawable.clothes_1)
+            else painterResource(R.drawable.clothes)
+
+        BottomNavItem.CODY ->
+            if (isSelected) painterResource(R.drawable.cody_1)
+            else painterResource(R.drawable.cody)
     }
 }
+
