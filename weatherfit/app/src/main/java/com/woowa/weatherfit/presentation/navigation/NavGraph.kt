@@ -104,7 +104,10 @@ fun WeatherFitNavHost(
                 arguments = listOf(navArgument("codyId") { type = NavType.LongType })
             ) {
                 CodyDetailScreen(
-                    onNavigateBack = { navController.popBackStack() }
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToCodyDetail = { codyId ->
+                        navController.navigate(Routes.CodyDetail.createRoute(codyId))
+                    }
                 )
             }
 

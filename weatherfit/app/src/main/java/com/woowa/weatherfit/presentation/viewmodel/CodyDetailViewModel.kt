@@ -22,6 +22,7 @@ class CodyDetailViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val codyId: Long = savedStateHandle.get<Long>("codyId") ?: 0L
+    val currentCodyId: Long = codyId
 
     private val _uiState = MutableStateFlow(CodyDetailUiState())
     val uiState: StateFlow<CodyDetailUiState> = _uiState.asStateFlow()
