@@ -49,6 +49,7 @@ import com.woowa.weatherfit.domain.model.Cody
 import com.woowa.weatherfit.domain.model.CodyWithClothes
 import com.woowa.weatherfit.domain.model.HourlyForecast
 import com.woowa.weatherfit.domain.model.WeatherCondition
+import com.woowa.weatherfit.presentation.common.CodyCard
 import com.woowa.weatherfit.presentation.viewmodel.HomeViewModel
 import com.woowa.weatherfit.ui.theme.CardShape
 import com.woowa.weatherfit.ui.theme.WeatherGradientEnd
@@ -229,43 +230,11 @@ private fun RecommendedCodySection(
         items(codies) { codyWithClothes ->
             CodyCard(
                 codyWithClothes = codyWithClothes,
-                onClick = { onCodyClick(codyWithClothes.cody.id) }
+                onClick = { onCodyClick(codyWithClothes.cody.id) },
+                modifier = Modifier
+                    .width(150.dp)
+                    .height(200.dp)
             )
-        }
-    }
-}
-
-@Composable
-private fun CodyCard(
-    codyWithClothes: CodyWithClothes,
-    onClick: () -> Unit
-) {
-    Card(
-        modifier = Modifier
-            .width(150.dp)
-            .height(200.dp)
-            .clickable(onClick = onClick),
-        shape = CardShape,
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceEvenly
-        ) {
-            codyWithClothes.clothes.take(3).forEach { cloth ->
-                AsyncImage(
-                    model = cloth.imageUrl,
-                    contentDescription = null,
-                    modifier = Modifier
-                        .size(50.dp)
-                        .clip(RoundedCornerShape(8.dp)),
-                    contentScale = ContentScale.Crop
-                )
-            }
         }
     }
 }

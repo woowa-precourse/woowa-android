@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -38,6 +40,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.woowa.weatherfit.domain.model.CodyWithClothes
+import com.woowa.weatherfit.presentation.common.CodyCard
 import com.woowa.weatherfit.presentation.viewmodel.CodyListViewModel
 import com.woowa.weatherfit.ui.theme.CardShape
 import com.woowa.weatherfit.ui.theme.Primary
@@ -75,10 +78,10 @@ fun CodyListScreen(
             }
         } else {
             LazyVerticalGrid(
-                columns = GridCells.Fixed(3),
+                columns = GridCells.Fixed(2),
                 contentPadding = PaddingValues(16.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
@@ -86,7 +89,7 @@ fun CodyListScreen(
                 item {
                     Card(
                         modifier = Modifier
-                            .size(110.dp)
+                            .height(200.dp)
                             .clickable(onClick = onNavigateToCodyEdit),
                         shape = CardShape,
                         colors = CardDefaults.cardColors(containerColor = PrimaryContainer)
@@ -103,7 +106,7 @@ fun CodyListScreen(
                 }
 
                 items(uiState.codies) { codyWithClothes ->
-                    CodyCard(
+                    CodyCardWithEdit(
                         codyWithClothes = codyWithClothes,
                         isEditMode = uiState.isEditMode,
                         onClick = { onNavigateToCodyDetail(codyWithClothes.cody.id) },
@@ -116,44 +119,20 @@ fun CodyListScreen(
 }
 
 @Composable
-private fun CodyCard(
+private fun CodyCardWithEdit(
     codyWithClothes: CodyWithClothes,
     isEditMode: Boolean,
     onClick: () -> Unit,
     onDelete: () -> Unit
 ) {
     Box {
-        Card(
+        CodyCard(
+            codyWithClothes = codyWithClothes,
+            onClick = onClick,
             modifier = Modifier
-                .size(110.dp)
-                .clickable(onClick = onClick),
-            shape = CardShape,
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-        ) {
-            val firstCloth = codyWithClothes.clothes.firstOrNull()
-            if (firstCloth != null) {
-                AsyncImage(
-                    model = firstCloth.imageUrl,
-                    contentDescription = null,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clip(RoundedCornerShape(16.dp)),
-                    contentScale = ContentScale.Crop
-                )
-            }
-
-            if (codyWithClothes.clothes.isNotEmpty()) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.TopEnd) {
-                    Box(
-                        modifier = Modifier
-                            .padding(4.dp)
-                            .size(24.dp)
-                            .background(Primary, RoundedCornerShape(12.dp))
-                    )
-                }
-            }
-        }
+                .fillMaxWidth()
+                .height(200.dp)
+        )
 
         if (isEditMode) {
             IconButton(
