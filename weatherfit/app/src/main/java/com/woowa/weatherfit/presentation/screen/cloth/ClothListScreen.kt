@@ -1,10 +1,16 @@
 package com.woowa.weatherfit.presentation.screen.cloth
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
@@ -15,6 +21,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -23,19 +31,26 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
@@ -54,18 +69,35 @@ import com.woowa.weatherfit.ui.theme.Primary
 @Composable
 fun ClothListScreen(
     viewModel: ClothListViewModel = hiltViewModel(),
-    onNavigateToAddCloth: () -> Unit
+    onNavigateToAddCloth: (Long?) -> Unit,
+    onNavigateToClothDetail: (Long) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    var isEditMode by remember { mutableStateOf(false) }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("옷 관리") }) },
+        topBar = {
+            TopAppBar(
+                title = { Text("옷 관리") },
+                actions = {
+                    TextButton(onClick = { isEditMode = !isEditMode }) {
+                        Text(
+                            text = if (isEditMode) "완료" else "편집",
+                            color = Primary,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            )
+        },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = onNavigateToAddCloth,
-                containerColor = Primary
-            ) {
-                Icon(Icons.Default.Add, "Add Cloth", tint = Color.White)
+            if (!isEditMode) {
+                FloatingActionButton(
+                    onClick = { onNavigateToAddCloth(null) },
+                    containerColor = Primary
+                ) {
+                    Icon(Icons.Default.Add, "Add Cloth", tint = Color.White)
+                }
             }
         }
     ) { paddingValues ->
@@ -90,7 +122,13 @@ fun ClothListScreen(
                     CircularProgressIndicator()
                 }
             } else {
-                ClothesGrid(clothes = uiState.filteredClothes)
+                ClothesGrid(
+                    clothes = uiState.filteredClothes,
+                    isEditMode = isEditMode,
+                    onClothClick = onNavigateToClothDetail,
+                    onEditClick = { clothId -> onNavigateToAddCloth(clothId) },
+                    onDeleteClick = { clothId -> viewModel.deleteCloth(clothId) }
+                )
             }
         }
     }
@@ -157,7 +195,13 @@ private fun SubCategoryChips(
 }
 
 @Composable
-private fun ClothesGrid(clothes: List<Cloth>) {
+private fun ClothesGrid(
+    clothes: List<Cloth>,
+    isEditMode: Boolean,
+    onClothClick: (Long) -> Unit,
+    onEditClick: (Long) -> Unit,
+    onDeleteClick: (Long) -> Unit
+) {
     LazyVerticalGrid(
         columns = GridCells.Fixed(3),
         contentPadding = PaddingValues(16.dp),
@@ -165,20 +209,67 @@ private fun ClothesGrid(clothes: List<Cloth>) {
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         items(clothes) { cloth ->
-            Card(
-                modifier = Modifier.size(110.dp),
-                shape = CardShape,
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-            ) {
-                AsyncImage(
-                    model = cloth.imageUrl,
-                    contentDescription = cloth.subCategory.displayName,
+            Box(modifier = Modifier.size(110.dp)) {
+                Card(
                     modifier = Modifier
                         .fillMaxSize()
-                        .clip(RoundedCornerShape(16.dp)),
-                    contentScale = ContentScale.Crop
-                )
+                        .clickable {
+                            if (!isEditMode) {
+                                onClothClick(cloth.id)
+                            }
+                        },
+                    shape = CardShape,
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                ) {
+                    AsyncImage(
+                        model = cloth.imageUrl,
+                        contentDescription = cloth.subCategory.displayName,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(RoundedCornerShape(16.dp)),
+                        contentScale = ContentScale.Crop
+                    )
+                }
+
+                if (isEditMode) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color.Black.copy(alpha = 0.5f))
+                            .padding(4.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Button(
+                            onClick = { onEditClick(cloth.id) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(36.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Primary
+                            ),
+                            contentPadding = PaddingValues(4.dp)
+                        ) {
+                            Text("수정", fontSize = 12.sp, color = Color.White)
+                        }
+
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        Button(
+                            onClick = { onDeleteClick(cloth.id) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(36.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color.Red
+                            ),
+                            contentPadding = PaddingValues(4.dp)
+                        ) {
+                            Text("삭제", fontSize = 12.sp, color = Color.White)
+                        }
+                    }
+                }
             }
         }
     }

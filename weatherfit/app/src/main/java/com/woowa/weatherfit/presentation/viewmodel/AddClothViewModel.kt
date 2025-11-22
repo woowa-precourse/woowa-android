@@ -9,6 +9,8 @@ import com.woowa.weatherfit.domain.model.MainCategory
 import com.woowa.weatherfit.domain.model.SubCategory
 import com.woowa.weatherfit.domain.model.TemperatureRange
 import com.woowa.weatherfit.domain.usecase.cloth.AddClothUseCase
+import com.woowa.weatherfit.domain.usecase.cloth.GetClothByIdUseCase
+import com.woowa.weatherfit.domain.usecase.cloth.UpdateClothUseCase
 import com.woowa.weatherfit.presentation.state.AddClothUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,11 +22,31 @@ import javax.inject.Inject
 
 @HiltViewModel
 class AddClothViewModel @Inject constructor(
-    private val addClothUseCase: AddClothUseCase
+    private val addClothUseCase: AddClothUseCase,
+    private val updateClothUseCase: UpdateClothUseCase,
+    private val getClothByIdUseCase: GetClothByIdUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AddClothUiState())
     val uiState: StateFlow<AddClothUiState> = _uiState.asStateFlow()
+
+    fun loadCloth(clothId: Long) {
+        viewModelScope.launch {
+            val cloth = getClothByIdUseCase(clothId) ?: return@launch
+            _uiState.update {
+                it.copy(
+                    clothId = clothId,
+                    imageUri = Uri.parse(cloth.imageUrl),
+                    selectedMainCategory = cloth.mainCategory,
+                    selectedSubCategory = cloth.subCategory,
+                    selectedTemperatureRange = cloth.temperatureRange,
+                    selectedColor = cloth.color,
+                    availableSubCategories = SubCategory.getByMainCategory(cloth.mainCategory),
+                    isEditMode = true
+                )
+            }
+        }
+    }
 
     fun setImageUri(uri: Uri?) {
         _uiState.update { it.copy(imageUri = uri) }
@@ -66,13 +88,20 @@ class AddClothViewModel @Inject constructor(
 
             try {
                 val cloth = Cloth(
+                    id = state.clothId ?: 0L,
                     imageUrl = state.imageUri.toString(),
                     mainCategory = state.selectedMainCategory,
                     subCategory = state.selectedSubCategory,
                     temperatureRange = state.selectedTemperatureRange,
                     color = state.selectedColor
                 )
-                addClothUseCase(cloth)
+
+                if (state.isEditMode && state.clothId != null) {
+                    updateClothUseCase(cloth)
+                } else {
+                    addClothUseCase(cloth)
+                }
+
                 _uiState.update { it.copy(isSaving = false, saveSuccess = true) }
             } catch (e: Exception) {
                 _uiState.update {

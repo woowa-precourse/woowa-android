@@ -14,6 +14,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.woowa.weatherfit.presentation.common.WeatherFitBottomBar
 import com.woowa.weatherfit.presentation.screen.cloth.AddClothScreen
+import com.woowa.weatherfit.presentation.screen.cloth.ClothDetailScreen
 import com.woowa.weatherfit.presentation.screen.cloth.ClothListScreen
 import com.woowa.weatherfit.presentation.screen.cody.CodyDetailScreen
 import com.woowa.weatherfit.presentation.screen.cody.CodyEditScreen
@@ -70,8 +71,11 @@ fun WeatherFitNavHost(
 
             composable(Routes.ClothList.route) {
                 ClothListScreen(
-                    onNavigateToAddCloth = {
-                        navController.navigate(Routes.AddCloth.route)
+                    onNavigateToAddCloth = { clothId ->
+                        navController.navigate(Routes.AddCloth.createRoute(clothId))
+                    },
+                    onNavigateToClothDetail = { clothId ->
+                        navController.navigate(Routes.ClothDetail.createRoute(clothId))
                     }
                 )
             }
@@ -87,8 +91,29 @@ fun WeatherFitNavHost(
                 )
             }
 
-            composable(Routes.AddCloth.route) {
+            composable(
+                route = Routes.AddCloth.route,
+                arguments = listOf(
+                    navArgument("clothId") {
+                        type = NavType.LongType
+                        defaultValue = -1L
+                    }
+                )
+            ) {
+                val clothId = it.arguments?.getLong("clothId")?.takeIf { it != -1L }
                 AddClothScreen(
+                    clothId = clothId,
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+
+            composable(
+                route = Routes.ClothDetail.route,
+                arguments = listOf(navArgument("clothId") { type = NavType.LongType })
+            ) {
+                val clothId = it.arguments?.getLong("clothId") ?: 0L
+                ClothDetailScreen(
+                    clothId = clothId,
                     onNavigateBack = { navController.popBackStack() }
                 )
             }

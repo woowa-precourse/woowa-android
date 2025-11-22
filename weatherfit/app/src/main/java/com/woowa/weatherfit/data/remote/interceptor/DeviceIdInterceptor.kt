@@ -1,22 +1,24 @@
 package com.woowa.weatherfit.data.remote.interceptor
 
-import com.woowa.weatherfit.data.local.preferences.DeviceIdManager
+import com.woowa.weatherfit.data.local.DeviceIdDataStore
+import kotlinx.coroutines.runBlocking
 import okhttp3.Interceptor
 import okhttp3.Response
 import javax.inject.Inject
 
 class DeviceIdInterceptor @Inject constructor(
-    private val deviceIdManager: DeviceIdManager
+    private val deviceIdDataStore: DeviceIdDataStore
 ) : Interceptor {
-    override fun intercept(chain: Interceptor.Chain): Response {
-        val originalRequest = chain.request()
-        val requestWithDeviceId = originalRequest.newBuilder()
-            .header(HEADER_DEVICE_ID, deviceIdManager.getDeviceId())
-            .build()
-        return chain.proceed(requestWithDeviceId)
-    }
 
-    companion object {
-        private const val HEADER_DEVICE_ID = "X-DEVICE-ID"
+    override fun intercept(chain: Interceptor.Chain): Response {
+        val deviceId = runBlocking {
+            deviceIdDataStore.getOrCreateDeviceId()
+        }
+
+        val request = chain.request().newBuilder()
+            .addHeader("X-DEVICE-ID", deviceId)
+            .build()
+
+        return chain.proceed(request)
     }
 }
