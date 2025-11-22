@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,10 +28,18 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
@@ -50,12 +59,24 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
 import kotlin.math.roundToInt
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
+import android.content.Context
+import android.graphics.Bitmap
+import android.view.View
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.platform.ComposeView
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.File
+import java.io.FileOutputStream
 import com.woowa.weatherfit.domain.model.Cloth
 import com.woowa.weatherfit.domain.model.MainCategory
 import com.woowa.weatherfit.domain.model.Season
@@ -76,6 +97,9 @@ fun CodyEditScreen(
     onNavigateBack: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var canvasView by remember { mutableStateOf<View?>(null) }
 
     LaunchedEffect(uiState.saveSuccess) {
         if (uiState.saveSuccess) onNavigateBack()
@@ -88,15 +112,24 @@ fun CodyEditScreen(
                 .padding(paddingValues)
         ) {
             // Draggable Canvas for Outfit Composition
+            var selectedClothId by remember { mutableStateOf<Long?>(null) }
+
             DraggableOutfitCanvas(
                 selectedClothes = uiState.selectedClothes,
                 clothItemsWithPosition = uiState.clothItemsWithPosition,
+                selectedClothId = selectedClothId,
+                onSelectCloth = { clothId -> selectedClothId = clothId },
                 onUpdatePosition = { clothId, x, y, scale ->
                     viewModel.updateClothPosition(clothId, x, y, scale)
                 },
+                onUpdateZIndex = { clothId, zIndex ->
+                    viewModel.updateClothZIndex(clothId, zIndex)
+                },
                 onRemoveCloth = { cloth ->
                     viewModel.removeSelectedCloth(cloth)
+                    if (selectedClothId == cloth.id) selectedClothId = null
                 },
+                onViewReady = { view -> canvasView = view },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(350.dp)
@@ -126,7 +159,16 @@ fun CodyEditScreen(
                 }
                 Spacer(modifier = Modifier.width(8.dp))
                 Button(
-                    onClick = { viewModel.saveCody() },
+                    onClick = {
+                        scope.launch {
+                            canvasView?.let { view ->
+                                val bitmap = captureViewToBitmap(view)
+                                val file = saveBitmapToFile(context, bitmap)
+                                viewModel.setThumbnail(file)
+                                viewModel.saveCody()
+                            }
+                        }
+                    },
                     colors = ButtonDefaults.buttonColors(containerColor = Primary),
                     shape = ButtonShape,
                     enabled = !uiState.isSaving && uiState.selectedClothes.isNotEmpty()
@@ -229,18 +271,58 @@ fun CodyEditScreen(
 fun DraggableOutfitCanvas(
     selectedClothes: List<Cloth>,
     clothItemsWithPosition: Map<Long, com.woowa.weatherfit.domain.model.CodyClothItem>,
+    selectedClothId: Long?,
+    onSelectCloth: (Long) -> Unit,
     onUpdatePosition: (Long, Double, Double, Double) -> Unit,
+    onUpdateZIndex: (Long, Int) -> Unit,
     onRemoveCloth: (Cloth) -> Unit,
+    onViewReady: (View) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var canvasSize by remember { mutableStateOf(IntOffset.Zero) }
 
-    Box(
+    AndroidView(
+        factory = { context ->
+            ComposeView(context).apply {
+                setContent {
+                    CanvasContent(
+                        selectedClothes = selectedClothes,
+                        clothItemsWithPosition = clothItemsWithPosition,
+                        selectedClothId = selectedClothId,
+                        canvasSize = canvasSize,
+                        onSelectCloth = onSelectCloth,
+                        onUpdatePosition = onUpdatePosition,
+                        onUpdateZIndex = onUpdateZIndex,
+                        onRemoveCloth = onRemoveCloth,
+                        onSizeChanged = { size -> canvasSize = size }
+                    )
+                }
+                onViewReady(this)
+            }
+        },
         modifier = modifier
+    )
+}
+
+@Composable
+private fun CanvasContent(
+    selectedClothes: List<Cloth>,
+    clothItemsWithPosition: Map<Long, com.woowa.weatherfit.domain.model.CodyClothItem>,
+    selectedClothId: Long?,
+    canvasSize: IntOffset,
+    onSelectCloth: (Long) -> Unit,
+    onUpdatePosition: (Long, Double, Double, Double) -> Unit,
+    onUpdateZIndex: (Long, Int) -> Unit,
+    onRemoveCloth: (Cloth) -> Unit,
+    onSizeChanged: (IntOffset) -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
             .clip(RoundedCornerShape(16.dp))
             .background(Color(0xFFF5F5F5))
             .onSizeChanged { size ->
-                canvasSize = IntOffset(size.width, size.height)
+                onSizeChanged(IntOffset(size.width, size.height))
             }
     ) {
         if (selectedClothes.isEmpty()) {
@@ -260,9 +342,17 @@ fun DraggableOutfitCanvas(
                     DraggableClothItem(
                         cloth = cloth,
                         position = item,
+                        isSelected = cloth.id == selectedClothId,
                         canvasSize = canvasSize,
+                        onSelect = { onSelectCloth(cloth.id) },
                         onUpdatePosition = { newX, newY ->
                             onUpdatePosition(cloth.id, newX, newY, item.scale)
+                        },
+                        onUpdateScale = { newScale ->
+                            onUpdatePosition(cloth.id, item.xCoord, item.yCoord, newScale)
+                        },
+                        onUpdateZIndex = { newZIndex ->
+                            onUpdateZIndex(cloth.id, newZIndex)
                         },
                         onRemove = { onRemoveCloth(cloth) }
                     )
@@ -275,8 +365,12 @@ fun DraggableOutfitCanvas(
 fun DraggableClothItem(
     cloth: Cloth,
     position: com.woowa.weatherfit.domain.model.CodyClothItem,
+    isSelected: Boolean,
     canvasSize: IntOffset,
+    onSelect: () -> Unit,
     onUpdatePosition: (Double, Double) -> Unit,
+    onUpdateScale: (Double) -> Unit,
+    onUpdateZIndex: (Int) -> Unit,
     onRemove: () -> Unit
 ) {
     var offsetX by remember(position.xCoord) { mutableStateOf((position.xCoord * canvasSize.x).toFloat()) }
@@ -293,27 +387,130 @@ fun DraggableClothItem(
                 )
             }
             .size(clothSize)
-            .pointerInput(Unit) {
-                detectDragGestures { change, dragAmount ->
-                    change.consume()
-                    offsetX = (offsetX + dragAmount.x).coerceIn(0f, canvasSize.x.toFloat())
-                    offsetY = (offsetY + dragAmount.y).coerceIn(0f, canvasSize.y.toFloat())
-
-                    // Update position in normalized coordinates (0.0 ~ 1.0)
-                    val normalizedX = (offsetX / canvasSize.x).toDouble().coerceIn(0.0, 1.0)
-                    val normalizedY = (offsetY / canvasSize.y).toDouble().coerceIn(0.0, 1.0)
-                    onUpdatePosition(normalizedX, normalizedY)
-                }
-            }
     ) {
+        // Cloth Image
         AsyncImage(
             model = cloth.imageUrl,
             contentDescription = null,
             modifier = Modifier
                 .fillMaxSize()
                 .clip(RoundedCornerShape(8.dp))
-                .border(2.dp, Primary, RoundedCornerShape(8.dp)),
+                .border(
+                    width = if (isSelected) 3.dp else 2.dp,
+                    color = if (isSelected) Color.Blue else Primary,
+                    shape = RoundedCornerShape(8.dp)
+                )
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onTap = { onSelect() }
+                    )
+                }
+                .pointerInput(Unit) {
+                    detectDragGestures { change, dragAmount ->
+                        change.consume()
+                        offsetX = (offsetX + dragAmount.x).coerceIn(0f, canvasSize.x.toFloat())
+                        offsetY = (offsetY + dragAmount.y).coerceIn(0f, canvasSize.y.toFloat())
+
+                        val normalizedX = (offsetX / canvasSize.x).toDouble().coerceIn(0.0, 1.0)
+                        val normalizedY = (offsetY / canvasSize.y).toDouble().coerceIn(0.0, 1.0)
+                        onUpdatePosition(normalizedX, normalizedY)
+                    }
+                },
             contentScale = ContentScale.Crop
         )
+
+        // Controls when selected
+        if (isSelected) {
+            Column(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .offset(y = 60.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                // Layer controls
+                Row(
+                    modifier = Modifier
+                        .background(Color.White, RoundedCornerShape(20.dp))
+                        .padding(4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    // Move backward
+                    IconButton(
+                        onClick = {
+                            val newZIndex = position.zIndex - 1
+                            onUpdateZIndex(newZIndex)
+                        },
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(Icons.Default.KeyboardArrowDown, "뒤로 보내기", tint = Primary)
+                    }
+
+                    // Move forward
+                    IconButton(
+                        onClick = {
+                            val newZIndex = position.zIndex + 1
+                            onUpdateZIndex(newZIndex)
+                        },
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(Icons.Default.KeyboardArrowUp, "앞으로 가져오기", tint = Primary)
+                    }
+                }
+
+                // Scale controls
+                Row(
+                    modifier = Modifier
+                        .background(Color.White, RoundedCornerShape(20.dp))
+                        .padding(4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    // Decrease size
+                    IconButton(
+                        onClick = {
+                            val newScale = (position.scale - 0.2).coerceAtLeast(0.5)
+                            onUpdateScale(newScale)
+                        },
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(Icons.Default.Remove, "크기 줄이기", tint = Primary)
+                    }
+
+                    // Remove cloth
+                    IconButton(
+                        onClick = onRemove,
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(Icons.Default.Close, "삭제", tint = Color.Red)
+                    }
+
+                    // Increase size
+                    IconButton(
+                        onClick = {
+                            val newScale = (position.scale + 0.2).coerceAtMost(2.0)
+                            onUpdateScale(newScale)
+                        },
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(Icons.Default.Add, "크기 키우기", tint = Primary)
+                    }
+                }
+            }
+        }
     }
+}
+
+private fun captureViewToBitmap(view: View): Bitmap {
+    val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
+    val canvas = android.graphics.Canvas(bitmap)
+    view.draw(canvas)
+    return bitmap
+}
+
+private suspend fun saveBitmapToFile(context: Context, bitmap: Bitmap): File = withContext(Dispatchers.IO) {
+    val file = File(context.cacheDir, "cody_thumbnail_${System.currentTimeMillis()}.png")
+    FileOutputStream(file).use { out: FileOutputStream ->
+        bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+    }
+    file
 }

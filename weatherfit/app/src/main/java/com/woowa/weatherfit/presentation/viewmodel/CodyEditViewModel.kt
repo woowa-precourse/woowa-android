@@ -132,6 +132,19 @@ class CodyEditViewModel @Inject constructor(
         }
     }
 
+    fun updateClothZIndex(clothId: Long, zIndex: Int) {
+        _uiState.update { state ->
+            val currentPosition = state.clothItemsWithPosition[clothId]
+            if (currentPosition != null) {
+                val updatedPositions = state.clothItemsWithPosition.toMutableMap()
+                updatedPositions[clothId] = currentPosition.copy(zIndex = zIndex)
+                state.copy(clothItemsWithPosition = updatedPositions)
+            } else {
+                state
+            }
+        }
+    }
+
     fun setThumbnail(file: File) {
         _uiState.update { it.copy(thumbnailFile = file) }
     }

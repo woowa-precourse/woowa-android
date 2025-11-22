@@ -5,12 +5,16 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -18,6 +22,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -35,7 +40,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
@@ -77,41 +84,83 @@ fun CodyListScreen(
                 CircularProgressIndicator()
             }
         } else {
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
-                contentPadding = PaddingValues(16.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+            Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
+                    .verticalScroll(rememberScrollState())
             ) {
-                item {
-                    Card(
+                // Add New Cody Button
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(120.dp)
+                        .padding(16.dp)
+                        .clickable(onClick = onNavigateToCodyEdit),
+                    shape = CardShape,
+                    colors = CardDefaults.cardColors(containerColor = PrimaryContainer)
+                ) {
+                    Box(
                         modifier = Modifier
-                            .height(200.dp)
-                            .clickable(onClick = onNavigateToCodyEdit),
-                        shape = CardShape,
-                        colors = CardDefaults.cardColors(containerColor = PrimaryContainer)
+                            .fillMaxSize()
+                            .border(2.dp, Primary.copy(alpha = 0.3f), CardShape),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .border(2.dp, Primary.copy(alpha = 0.3f), CardShape),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(Icons.Default.Add, "Add Cody", tint = Primary, modifier = Modifier.size(32.dp))
-                        }
+                        Icon(Icons.Default.Add, "Add Cody", tint = Primary, modifier = Modifier.size(32.dp))
                     }
                 }
 
-                items(uiState.codies) { codyWithClothes ->
-                    CodyCardWithEdit(
-                        codyWithClothes = codyWithClothes,
-                        isEditMode = uiState.isEditMode,
-                        onClick = { onNavigateToCodyDetail(codyWithClothes.cody.id) },
-                        onDelete = { viewModel.deleteCody(codyWithClothes.cody.id) }
+                // Fixed Codies Section
+                if (uiState.fixedCodies.isNotEmpty()) {
+                    Text(
+                        text = "고정된 코디",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                     )
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(2),
+                        contentPadding = PaddingValues(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.height(((uiState.fixedCodies.size / 2 + uiState.fixedCodies.size % 2) * 212).dp)
+                    ) {
+                        items(uiState.fixedCodies) { codyWithClothes ->
+                            CodyCardWithEdit(
+                                codyWithClothes = codyWithClothes,
+                                isEditMode = uiState.isEditMode,
+                                onClick = { onNavigateToCodyDetail(codyWithClothes.cody.id) },
+                                onDelete = { viewModel.deleteCody(codyWithClothes.cody.id) }
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+
+                // Regular Codies Section
+                if (uiState.regularCodies.isNotEmpty()) {
+                    Text(
+                        text = "모든 코디",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    )
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(2),
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.height(((uiState.regularCodies.size / 2 + uiState.regularCodies.size % 2) * 212).dp)
+                    ) {
+                        items(uiState.regularCodies) { codyWithClothes ->
+                            CodyCardWithEdit(
+                                codyWithClothes = codyWithClothes,
+                                isEditMode = uiState.isEditMode,
+                                onClick = { onNavigateToCodyDetail(codyWithClothes.cody.id) },
+                                onDelete = { viewModel.deleteCody(codyWithClothes.cody.id) }
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -133,6 +182,19 @@ private fun CodyCardWithEdit(
                 .fillMaxWidth()
                 .height(200.dp)
         )
+
+        // Show pin icon for fixed codies
+        if (codyWithClothes.cody.isFixed && !isEditMode) {
+            Icon(
+                imageVector = Icons.Default.PushPin,
+                contentDescription = "Fixed",
+                tint = Primary,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(8.dp)
+                    .size(20.dp)
+            )
+        }
 
         if (isEditMode) {
             IconButton(

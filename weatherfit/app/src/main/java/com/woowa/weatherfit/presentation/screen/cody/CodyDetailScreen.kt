@@ -20,6 +20,8 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.PushPin
+import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -85,8 +87,17 @@ fun CodyDetailScreen(
                             )
                         )
                     }
-                    IconButton(onClick = { }) {
-                        Icon(Icons.Default.MoreVert, "More")
+                    uiState.codyWithClothes?.cody?.let { cody ->
+                        IconButton(onClick = { viewModel.toggleFixed() }) {
+                            Icon(
+                                imageVector = if (cody.isFixed) Icons.Filled.PushPin else Icons.Outlined.PushPin,
+                                contentDescription = if (cody.isFixed) "고정 해제" else "고정",
+                                tint = Primary
+                            )
+                        }
+                    }
+                    IconButton(onClick = { viewModel.deleteCody() }) {
+                        Icon(Icons.Default.MoreVert, "Delete")
                     }
                 }
             )

@@ -4,7 +4,9 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.woowa.weatherfit.domain.model.CodyWithClothes
+import com.woowa.weatherfit.domain.usecase.cody.DeleteCodyUseCase
 import com.woowa.weatherfit.domain.usecase.cody.GetCodyDetailUseCase
+import com.woowa.weatherfit.domain.usecase.cody.ToggleCodyFixedUseCase
 import com.woowa.weatherfit.presentation.state.CodyDetailUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,6 +20,8 @@ import javax.inject.Inject
 @HiltViewModel
 class CodyDetailViewModel @Inject constructor(
     private val getCodyDetailUseCase: GetCodyDetailUseCase,
+    private val toggleCodyFixedUseCase: ToggleCodyFixedUseCase,
+    private val deleteCodyUseCase: DeleteCodyUseCase,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -47,5 +51,17 @@ class CodyDetailViewModel @Inject constructor(
 
     fun selectClothIndex(index: Int) {
         _uiState.update { it.copy(selectedClothIndex = index) }
+    }
+
+    fun toggleFixed() {
+        viewModelScope.launch {
+            toggleCodyFixedUseCase(codyId)
+        }
+    }
+
+    fun deleteCody() {
+        viewModelScope.launch {
+            deleteCodyUseCase(codyId)
+        }
     }
 }
