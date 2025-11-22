@@ -34,4 +34,7 @@ interface CodyDao {
 
     @Query("DELETE FROM codies WHERE id = :id")
     suspend fun deleteCodyById(id: Long)
+
+    @Query("DELETE FROM codies")
+    suspend fun deleteAll()
 }
