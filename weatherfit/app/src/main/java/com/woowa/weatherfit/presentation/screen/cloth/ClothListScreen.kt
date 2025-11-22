@@ -149,7 +149,12 @@ private fun MainCategoryTabs(
             Tab(
                 selected = category == selectedCategory,
                 onClick = { onCategorySelected(category) },
-                text = { Text(category.displayName) }
+                text = {
+                    Text(
+                        text = category.displayName,
+                        color = if (category == selectedCategory) Primary else Color.Black
+                    )
+                }
             )
         }
     }
