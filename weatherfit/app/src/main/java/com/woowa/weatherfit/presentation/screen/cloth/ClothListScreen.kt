@@ -175,7 +175,9 @@ private fun SubCategoryChips(
                     selectedLabelColor = OnChipSelected,
                     containerColor = ChipUnselected,
                     labelColor = OnChipUnselected
-                )
+                ),
+                border = null,
+                shape = RoundedCornerShape(20.dp)
             )
         }
         items(categories) { category ->
@@ -188,7 +190,9 @@ private fun SubCategoryChips(
                     selectedLabelColor = OnChipSelected,
                     containerColor = ChipUnselected,
                     labelColor = OnChipUnselected
-                )
+                ),
+                border = null,
+                shape = RoundedCornerShape(20.dp)
             )
         }
     }
