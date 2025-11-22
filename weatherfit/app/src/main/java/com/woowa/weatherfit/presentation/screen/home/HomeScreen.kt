@@ -93,7 +93,7 @@ fun HomeScreen(
 
         // Recommended Cody Section
         RecommendedCodySection(
-            codies = if (uiState.recommendedCodies.isEmpty()) getDummyCodies() else uiState.recommendedCodies,
+            codies = uiState.recommendedCodies,
             onCodyClick = onNavigateToCodyDetail
         )
 
@@ -237,35 +237,4 @@ private fun RecommendedCodySection(
             )
         }
     }
-}
-
-// 더미 데이터 생성 함수
-fun getDummyCodies(): List<CodyWithClothes> {
-    return listOf(
-        CodyWithClothes(
-            cody = Cody(id = 1, name = "코디 1", season = com.woowa.weatherfit.domain.model.Season.SPRING),
-            clothes = listOf(
-                com.woowa.weatherfit.domain.model.Cloth(id = 1, imageUrl = "https://picsum.photos/200/300?random=1", mainCategory = com.woowa.weatherfit.domain.model.MainCategory.TOP, subCategory = com.woowa.weatherfit.domain.model.SubCategory.LONG_SLEEVE, temperatureRange = com.woowa.weatherfit.domain.model.TemperatureRange.COOL),
-                com.woowa.weatherfit.domain.model.Cloth(id = 2, imageUrl = "https://picsum.photos/200/300?random=2", mainCategory = com.woowa.weatherfit.domain.model.MainCategory.BOTTOM, subCategory = com.woowa.weatherfit.domain.model.SubCategory.LONG_PANTS, temperatureRange = com.woowa.weatherfit.domain.model.TemperatureRange.COOL),
-                com.woowa.weatherfit.domain.model.Cloth(id = 3, imageUrl = "https://picsum.photos/200/300?random=3", mainCategory = com.woowa.weatherfit.domain.model.MainCategory.ETC, subCategory = com.woowa.weatherfit.domain.model.SubCategory.SHOES, temperatureRange = com.woowa.weatherfit.domain.model.TemperatureRange.COOL)
-            )
-        ),
-        CodyWithClothes(
-            cody = Cody(id = 2, name = "코디 2", season = com.woowa.weatherfit.domain.model.Season.SUMMER),
-            clothes = listOf(
-                com.woowa.weatherfit.domain.model.Cloth(id = 4, imageUrl = "https://picsum.photos/200/300?random=4", mainCategory = com.woowa.weatherfit.domain.model.MainCategory.TOP, subCategory = com.woowa.weatherfit.domain.model.SubCategory.SHORT_SLEEVE, temperatureRange = com.woowa.weatherfit.domain.model.TemperatureRange.HOT),
-                com.woowa.weatherfit.domain.model.Cloth(id = 5, imageUrl = "https://picsum.photos/200/300?random=5", mainCategory = com.woowa.weatherfit.domain.model.MainCategory.BOTTOM, subCategory = com.woowa.weatherfit.domain.model.SubCategory.SHORT_PANTS, temperatureRange = com.woowa.weatherfit.domain.model.TemperatureRange.HOT),
-                com.woowa.weatherfit.domain.model.Cloth(id = 6, imageUrl = "https://picsum.photos/200/300?random=6", mainCategory = com.woowa.weatherfit.domain.model.MainCategory.ETC, subCategory = com.woowa.weatherfit.domain.model.SubCategory.SHOES, temperatureRange = com.woowa.weatherfit.domain.model.TemperatureRange.HOT)
-            )
-        ),
-        CodyWithClothes(
-            cody = Cody(id = 3, name = "코디 3", season = com.woowa.weatherfit.domain.model.Season.AUTUMN),
-            clothes = listOf(
-                com.woowa.weatherfit.domain.model.Cloth(id = 7, imageUrl = "https://picsum.photos/200/300?random=7", mainCategory = com.woowa.weatherfit.domain.model.MainCategory.TOP, subCategory = com.woowa.weatherfit.domain.model.SubCategory.LONG_SLEEVE, temperatureRange = com.woowa.weatherfit.domain.model.TemperatureRange.COOL),
-                com.woowa.weatherfit.domain.model.Cloth(id = 8, imageUrl = "https://picsum.photos/200/300?random=8", mainCategory = com.woowa.weatherfit.domain.model.MainCategory.OUTER, subCategory = com.woowa.weatherfit.domain.model.SubCategory.BLAZER, temperatureRange = com.woowa.weatherfit.domain.model.TemperatureRange.COOL),
-                com.woowa.weatherfit.domain.model.Cloth(id = 9, imageUrl = "https://picsum.photos/200/300?random=9", mainCategory = com.woowa.weatherfit.domain.model.MainCategory.BOTTOM, subCategory = com.woowa.weatherfit.domain.model.SubCategory.LONG_PANTS, temperatureRange = com.woowa.weatherfit.domain.model.TemperatureRange.COOL),
-                com.woowa.weatherfit.domain.model.Cloth(id = 10, imageUrl = "https://picsum.photos/200/300?random=10", mainCategory = com.woowa.weatherfit.domain.model.MainCategory.ETC, subCategory = com.woowa.weatherfit.domain.model.SubCategory.SHOES, temperatureRange = com.woowa.weatherfit.domain.model.TemperatureRange.COOL)
-            )
-        )
-    )
 }

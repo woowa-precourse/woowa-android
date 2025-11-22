@@ -63,7 +63,6 @@ fun CodyDetailScreen(
     onNavigateToCodyDetail: (Long) -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val dummyCodies = getDummyCodiesForDetail()
 
     Scaffold(
         topBar = {
@@ -103,16 +102,7 @@ fun CodyDetailScreen(
                 CircularProgressIndicator()
             }
         } else {
-            // 현재 codyId에 해당하는 더미 데이터 찾기
-            val currentCodyId = viewModel.currentCodyId
-            val dummyCodyWithClothes = dummyCodies.find { it.cody.id == currentCodyId } ?: dummyCodies.firstOrNull()
-
-            val codyWithClothes = uiState.codyWithClothes ?: dummyCodyWithClothes ?: return@Scaffold
-
-            // 이전/다음 코디 ID 계산
-            val currentIndex = dummyCodies.indexOfFirst { it.cody.id == codyWithClothes.cody.id }
-            val prevCodyId = if (currentIndex > 0) dummyCodies[currentIndex - 1].cody.id else dummyCodies.last().cody.id
-            val nextCodyId = if (currentIndex < dummyCodies.size - 1) dummyCodies[currentIndex + 1].cody.id else dummyCodies.first().cody.id
+            val codyWithClothes = uiState.codyWithClothes ?: return@Scaffold
 
             Column(
                 modifier = Modifier
@@ -186,14 +176,16 @@ fun CodyDetailScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        IconButton(onClick = {
-                            onNavigateToCodyDetail(prevCodyId)
-                        }) {
+                        IconButton(
+                            onClick = { /* TODO: Implement previous cody navigation */ },
+                            enabled = false
+                        ) {
                             Icon(Icons.Default.ChevronLeft, "Previous", tint = Color.Gray, modifier = Modifier.size(48.dp))
                         }
-                        IconButton(onClick = {
-                            onNavigateToCodyDetail(nextCodyId)
-                        }) {
+                        IconButton(
+                            onClick = { /* TODO: Implement next cody navigation */ },
+                            enabled = false
+                        ) {
                             Icon(Icons.Default.ChevronRight, "Next", tint = Color.Gray, modifier = Modifier.size(48.dp))
                         }
                     }
@@ -231,35 +223,4 @@ fun CodyDetailScreen(
             }
         }
     }
-}
-
-// 더미 데이터 생성 함수
-fun getDummyCodiesForDetail(): List<CodyWithClothes> {
-    return listOf(
-        CodyWithClothes(
-            cody = Cody(id = 1, name = "코디 1", season = Season.SPRING),
-            clothes = listOf(
-                Cloth(id = 1, imageUrl = "https://picsum.photos/200/300?random=1", mainCategory = MainCategory.TOP, subCategory = SubCategory.LONG_SLEEVE, temperatureRange = TemperatureRange.COOL),
-                Cloth(id = 2, imageUrl = "https://picsum.photos/200/300?random=2", mainCategory = MainCategory.BOTTOM, subCategory = SubCategory.LONG_PANTS, temperatureRange = TemperatureRange.COOL),
-                Cloth(id = 3, imageUrl = "https://picsum.photos/200/300?random=3", mainCategory = MainCategory.ETC, subCategory = SubCategory.SHOES, temperatureRange = TemperatureRange.COOL)
-            )
-        ),
-        CodyWithClothes(
-            cody = Cody(id = 2, name = "코디 2", season = Season.SUMMER),
-            clothes = listOf(
-                Cloth(id = 4, imageUrl = "https://picsum.photos/200/300?random=4", mainCategory = MainCategory.TOP, subCategory = SubCategory.SHORT_SLEEVE, temperatureRange = TemperatureRange.HOT),
-                Cloth(id = 5, imageUrl = "https://picsum.photos/200/300?random=5", mainCategory = MainCategory.BOTTOM, subCategory = SubCategory.SHORT_PANTS, temperatureRange = TemperatureRange.HOT),
-                Cloth(id = 6, imageUrl = "https://picsum.photos/200/300?random=6", mainCategory = MainCategory.ETC, subCategory = SubCategory.SHOES, temperatureRange = TemperatureRange.HOT)
-            )
-        ),
-        CodyWithClothes(
-            cody = Cody(id = 3, name = "코디 3", season = Season.AUTUMN),
-            clothes = listOf(
-                Cloth(id = 7, imageUrl = "https://picsum.photos/200/300?random=7", mainCategory = MainCategory.TOP, subCategory = SubCategory.LONG_SLEEVE, temperatureRange = TemperatureRange.COOL),
-                Cloth(id = 8, imageUrl = "https://picsum.photos/200/300?random=8", mainCategory = MainCategory.OUTER, subCategory = SubCategory.BLAZER, temperatureRange = TemperatureRange.COOL),
-                Cloth(id = 9, imageUrl = "https://picsum.photos/200/300?random=9", mainCategory = MainCategory.BOTTOM, subCategory = SubCategory.LONG_PANTS, temperatureRange = TemperatureRange.COOL),
-                Cloth(id = 10, imageUrl = "https://picsum.photos/200/300?random=10", mainCategory = MainCategory.ETC, subCategory = SubCategory.SHOES, temperatureRange = TemperatureRange.COOL)
-            )
-        )
-    )
 }

@@ -3,6 +3,7 @@ package com.woowa.weatherfit.presentation.screen.cody
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -37,12 +39,20 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import kotlin.math.roundToInt
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
@@ -77,37 +87,21 @@ fun CodyEditScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Selected Clothes Preview
-            Box(
+            // Draggable Canvas for Outfit Composition
+            DraggableOutfitCanvas(
+                selectedClothes = uiState.selectedClothes,
+                clothItemsWithPosition = uiState.clothItemsWithPosition,
+                onUpdatePosition = { clothId, x, y, scale ->
+                    viewModel.updateClothPosition(clothId, x, y, scale)
+                },
+                onRemoveCloth = { cloth ->
+                    viewModel.removeSelectedCloth(cloth)
+                },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(250.dp)
+                    .height(350.dp)
                     .padding(16.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(Color(0xFFF5F5F5)),
-                contentAlignment = Alignment.Center
-            ) {
-                if (uiState.selectedClothes.isEmpty()) {
-                    Text("옷을 선택해주세요", color = Color.Gray)
-                } else {
-                    LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        contentPadding = PaddingValues(8.dp)
-                    ) {
-                        items(uiState.selectedClothes) { cloth ->
-                            AsyncImage(
-                                model = cloth.imageUrl,
-                                contentDescription = null,
-                                modifier = Modifier
-                                    .size(80.dp)
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .clickable { viewModel.removeSelectedCloth(cloth) },
-                                contentScale = ContentScale.Crop
-                            )
-                        }
-                    }
-                }
-            }
+            )
 
             // Season Selection
             Row(
@@ -228,5 +222,98 @@ fun CodyEditScreen(
                 }
             }
         }
+    }
+}
+
+@Composable
+fun DraggableOutfitCanvas(
+    selectedClothes: List<Cloth>,
+    clothItemsWithPosition: Map<Long, com.woowa.weatherfit.domain.model.CodyClothItem>,
+    onUpdatePosition: (Long, Double, Double, Double) -> Unit,
+    onRemoveCloth: (Cloth) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var canvasSize by remember { mutableStateOf(IntOffset.Zero) }
+
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(16.dp))
+            .background(Color(0xFFF5F5F5))
+            .onSizeChanged { size ->
+                canvasSize = IntOffset(size.width, size.height)
+            }
+    ) {
+        if (selectedClothes.isEmpty()) {
+            Text(
+                text = "옷을 선택하면 여기에 배치됩니다.\n드래그로 위치를 조정하세요.",
+                color = Color.Gray,
+                modifier = Modifier.align(Alignment.Center)
+            )
+        } else {
+            // Draw clothes sorted by z-index
+            selectedClothes
+                .mapNotNull { cloth ->
+                    clothItemsWithPosition[cloth.id]?.let { item -> cloth to item }
+                }
+                .sortedBy { (_, item) -> item.zIndex }
+                .forEach { (cloth, item) ->
+                    DraggableClothItem(
+                        cloth = cloth,
+                        position = item,
+                        canvasSize = canvasSize,
+                        onUpdatePosition = { newX, newY ->
+                            onUpdatePosition(cloth.id, newX, newY, item.scale)
+                        },
+                        onRemove = { onRemoveCloth(cloth) }
+                    )
+                }
+        }
+    }
+}
+
+@Composable
+fun DraggableClothItem(
+    cloth: Cloth,
+    position: com.woowa.weatherfit.domain.model.CodyClothItem,
+    canvasSize: IntOffset,
+    onUpdatePosition: (Double, Double) -> Unit,
+    onRemove: () -> Unit
+) {
+    var offsetX by remember(position.xCoord) { mutableStateOf((position.xCoord * canvasSize.x).toFloat()) }
+    var offsetY by remember(position.yCoord) { mutableStateOf((position.yCoord * canvasSize.y).toFloat()) }
+
+    val clothSize = (80 * position.scale).dp
+
+    Box(
+        modifier = Modifier
+            .offset {
+                IntOffset(
+                    (offsetX - clothSize.toPx() / 2).roundToInt(),
+                    (offsetY - clothSize.toPx() / 2).roundToInt()
+                )
+            }
+            .size(clothSize)
+            .pointerInput(Unit) {
+                detectDragGestures { change, dragAmount ->
+                    change.consume()
+                    offsetX = (offsetX + dragAmount.x).coerceIn(0f, canvasSize.x.toFloat())
+                    offsetY = (offsetY + dragAmount.y).coerceIn(0f, canvasSize.y.toFloat())
+
+                    // Update position in normalized coordinates (0.0 ~ 1.0)
+                    val normalizedX = (offsetX / canvasSize.x).toDouble().coerceIn(0.0, 1.0)
+                    val normalizedY = (offsetY / canvasSize.y).toDouble().coerceIn(0.0, 1.0)
+                    onUpdatePosition(normalizedX, normalizedY)
+                }
+            }
+    ) {
+        AsyncImage(
+            model = cloth.imageUrl,
+            contentDescription = null,
+            modifier = Modifier
+                .fillMaxSize()
+                .clip(RoundedCornerShape(8.dp))
+                .border(2.dp, Primary, RoundedCornerShape(8.dp)),
+            contentScale = ContentScale.Crop
+        )
     }
 }
