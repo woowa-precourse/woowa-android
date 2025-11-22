@@ -74,7 +74,9 @@ class ClothListViewModel @Inject constructor(
 
     fun deleteCloth(clothId: Long) {
         viewModelScope.launch {
-            deleteClothUseCase(clothId)
+            deleteClothUseCase(clothId).onFailure { e ->
+                // TODO: 에러 처리 (Toast 또는 Snackbar 표시)
+            }
         }
     }
 }
