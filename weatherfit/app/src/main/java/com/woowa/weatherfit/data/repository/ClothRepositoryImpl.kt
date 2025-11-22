@@ -83,12 +83,13 @@ class ClothRepositoryImpl @Inject constructor(
         )
 
         val request = ClothesRegisterRequest(
-            category = category.name.lowercase(),
-            subCategory = subCategory.name.lowercase()
+            category = category.name,
+            subCategory = subCategory.serverValue
         )
 
         val requestJson = json.encodeToString(request)
-        val dataPart = MultipartBody.Part.createFormData("data", requestJson)
+        val requestBody = requestJson.toRequestBody("application/json".toMediaTypeOrNull())
+        val dataPart = MultipartBody.Part.createFormData("data", null, requestBody)
 
         val response = clothesApi.registerClothes(imagePart, dataPart)
         response.toDomain()
