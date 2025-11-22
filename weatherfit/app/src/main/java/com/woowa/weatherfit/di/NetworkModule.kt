@@ -1,6 +1,8 @@
 package com.woowa.weatherfit.di
 
+import com.woowa.weatherfit.data.remote.api.ClothesApi
 import com.woowa.weatherfit.data.remote.api.WeatherApi
+import com.woowa.weatherfit.data.remote.interceptor.DeviceIdInterceptor
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -31,8 +33,11 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideOkHttpClient(): OkHttpClient {
+    fun provideOkHttpClient(
+        deviceIdInterceptor: DeviceIdInterceptor
+    ): OkHttpClient {
         return OkHttpClient.Builder()
+            .addInterceptor(deviceIdInterceptor)
             .addInterceptor(
                 HttpLoggingInterceptor().apply {
                     level = HttpLoggingInterceptor.Level.BODY
@@ -63,5 +68,11 @@ object NetworkModule {
     @Singleton
     fun provideWeatherApi(retrofit: Retrofit): WeatherApi {
         return retrofit.create(WeatherApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideClothesApi(retrofit: Retrofit): ClothesApi {
+        return retrofit.create(ClothesApi::class.java)
     }
 }
