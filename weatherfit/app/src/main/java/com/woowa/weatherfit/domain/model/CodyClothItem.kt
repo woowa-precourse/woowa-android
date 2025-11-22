@@ -1,9 +1,12 @@
 package com.woowa.weatherfit.domain.model
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class CodyClothItem(
-    val clothId: Long,
-    val x: Float = 0.5f,      // 0.0 ~ 1.0 (캔버스 비율 기준 x 좌표)
-    val y: Float = 0.5f,      // 0.0 ~ 1.0 (캔버스 비율 기준 y 좌표)
-    val scale: Float = 1.0f,  // 크기 배율
-    val rotation: Float = 0f  // 회전 각도
+    val id: Long,          // cloth ID
+    val xCoord: Double = 0.5,   // x coordinate (0.0 ~ 1.0)
+    val yCoord: Double = 0.5,   // y coordinate (0.0 ~ 1.0)
+    val zIndex: Int = 0,        // layer order (z-index)
+    val scale: Double = 1.0     // size scale
 )

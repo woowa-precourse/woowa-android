@@ -2,10 +2,10 @@ package com.woowa.weatherfit.domain.model
 
 data class Cody(
     val id: Long = 0,
-    val name: String = "",
-    val imageUrl: String? = null,
-    val clothIds: List<Long> = emptyList(),
-    val season: Season,
+    val thumbnail: String? = null,
+    val clothItems: List<CodyClothItem> = emptyList(),
+    val category: Season,
+    val isFixed: Boolean = false,
     val createdAt: Long = System.currentTimeMillis()
 )
 
