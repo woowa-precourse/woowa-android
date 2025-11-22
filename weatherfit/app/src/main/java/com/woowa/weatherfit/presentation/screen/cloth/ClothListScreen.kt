@@ -149,7 +149,12 @@ private fun MainCategoryTabs(
             Tab(
                 selected = category == selectedCategory,
                 onClick = { onCategorySelected(category) },
-                text = { Text(category.displayName) }
+                text = {
+                    Text(
+                        text = category.displayName,
+                        color = if (category == selectedCategory) Primary else Color.Black
+                    )
+                }
             )
         }
     }
@@ -175,7 +180,9 @@ private fun SubCategoryChips(
                     selectedLabelColor = OnChipSelected,
                     containerColor = ChipUnselected,
                     labelColor = OnChipUnselected
-                )
+                ),
+                border = null,
+                shape = RoundedCornerShape(20.dp)
             )
         }
         items(categories) { category ->
@@ -188,7 +195,9 @@ private fun SubCategoryChips(
                     selectedLabelColor = OnChipSelected,
                     containerColor = ChipUnselected,
                     labelColor = OnChipUnselected
-                )
+                ),
+                border = null,
+                shape = RoundedCornerShape(20.dp)
             )
         }
     }

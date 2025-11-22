@@ -9,44 +9,49 @@ enum class MainCategory(val displayName: String) {
 
 enum class SubCategory(
     val displayName: String,
-    val mainCategory: MainCategory
+    val mainCategory: MainCategory,
+    val serverValue: String
 ) {
     // 상의
-    SHORT_SLEEVE("반팔", MainCategory.TOP),
-    LONG_SLEEVE("긴팔", MainCategory.TOP),
-    SHIRT("셔츠", MainCategory.TOP),
-    KNIT("니트", MainCategory.TOP),
-    HOODIE("후드티", MainCategory.TOP),
-    SWEATSHIRT("맨투맨", MainCategory.TOP),
-    VEST("조끼(베스트)", MainCategory.TOP),
-    BLOUSE("블라우스", MainCategory.TOP),
+    SHORT_SLEEVE("반팔", MainCategory.TOP, "SHORT_SLEEVE_TEE"),
+    LONG_SLEEVE("긴팔", MainCategory.TOP, "LONG_SLEEVE_TEE"),
+    SHIRT("셔츠", MainCategory.TOP, "SHIRT"),
+    KNIT("니트", MainCategory.TOP, "KNIT"),
+    HOODIE("후드티", MainCategory.TOP, "HOODIE"),
+    SWEATSHIRT("맨투맨", MainCategory.TOP, "SWEATSHIRT"),
+    VEST("조끼(베스트)", MainCategory.TOP, "VEST"),
+    BLOUSE("블라우스", MainCategory.TOP, "BLOUSE"),
 
     // 아우터
-    CARDIGAN("가디건", MainCategory.OUTER),
-    PADDING("패딩", MainCategory.OUTER),
-    COAT("코트", MainCategory.OUTER),
-    WINDBREAKER("바람막이", MainCategory.OUTER),
-    JUMPER("점퍼/야상", MainCategory.OUTER),
-    BLAZER("블레이저(자켓)", MainCategory.OUTER),
+    CARDIGAN("가디건", MainCategory.OUTER, "CARDIGAN"),
+    PADDING("패딩", MainCategory.OUTER, "PADDED_JACKET"),
+    COAT("코트", MainCategory.OUTER, "COAT"),
+    WINDBREAKER("바람막이", MainCategory.OUTER, "WINDBREAKER"),
+    JUMPER("점퍼/야상", MainCategory.OUTER, "JUMPER"),
+    BLAZER("블레이저(자켓)", MainCategory.OUTER, "BLAZER"),
+    ZIP_UP_HOODIE("후드집업", MainCategory.OUTER, "ZIP_UP_HOODIE"),
 
     // 하의
-    LONG_PANTS("긴바지", MainCategory.BOTTOM),
-    SHORT_PANTS("반바지", MainCategory.BOTTOM),
-    SLACKS("슬랙스", MainCategory.BOTTOM),
-    JEANS("청바지", MainCategory.BOTTOM),
-    JOGGER("조거팬츠", MainCategory.BOTTOM),
-    SKIRT("스커트", MainCategory.BOTTOM),
+    LONG_PANTS("긴바지", MainCategory.BOTTOM, "LONG_PANTS"),
+    SHORT_PANTS("반바지", MainCategory.BOTTOM, "SHORTS"),
+    SLACKS("슬랙스", MainCategory.BOTTOM, "SLACKS"),
+    JEANS("청바지", MainCategory.BOTTOM, "JEANS"),
+    JOGGER("조거팬츠", MainCategory.BOTTOM, "JOGGER_PANTS"),
+    SKIRT("스커트", MainCategory.BOTTOM, "SKIRT"),
 
     // 기타
-    DRESS("원피스", MainCategory.ETC),
-    HAT("모자", MainCategory.ETC),
-    SHOES("신발", MainCategory.ETC),
-    HOODIE_ZIP("후드집업", MainCategory.ETC),
-    TRAINING_SET("트레이닝복", MainCategory.ETC);
+    DRESS("원피스", MainCategory.ETC, "DRESS"),
+    HAT("모자", MainCategory.ETC, "HAT"),
+    SHOES("신발", MainCategory.ETC, "SHOES"),
+    TRAINING_SET("트레이닝복", MainCategory.ETC, "TRACKSUIT");
 
     companion object {
         fun getByMainCategory(mainCategory: MainCategory): List<SubCategory> {
             return entries.filter { it.mainCategory == mainCategory }
+        }
+
+        fun fromServerValue(serverValue: String): SubCategory? {
+            return entries.find { it.serverValue == serverValue }
         }
     }
 }

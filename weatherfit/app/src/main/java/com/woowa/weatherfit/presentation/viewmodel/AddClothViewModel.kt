@@ -86,24 +86,24 @@ class AddClothViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true, error = null) }
 
-            try {
-                val cloth = Cloth(
-                    id = state.clothId ?: 0L,
-                    imageUrl = state.imageUri.toString(),
-                    mainCategory = state.selectedMainCategory,
-                    subCategory = state.selectedSubCategory,
-                    temperatureRange = state.selectedTemperatureRange,
-                    color = state.selectedColor
-                )
+            val cloth = Cloth(
+                id = state.clothId ?: 0L,
+                imageUrl = "",
+                mainCategory = state.selectedMainCategory,
+                subCategory = state.selectedSubCategory,
+                temperatureRange = state.selectedTemperatureRange,
+                color = state.selectedColor
+            )
 
-                if (state.isEditMode && state.clothId != null) {
-                    updateClothUseCase(cloth)
-                } else {
-                    addClothUseCase(cloth)
-                }
+            val result = if (state.isEditMode && state.clothId != null) {
+                updateClothUseCase(cloth)
+            } else {
+                addClothUseCase(state.imageUri!!, cloth)
+            }
 
+            result.onSuccess {
                 _uiState.update { it.copy(isSaving = false, saveSuccess = true) }
-            } catch (e: Exception) {
+            }.onFailure { e ->
                 _uiState.update {
                     it.copy(isSaving = false, error = e.message ?: "저장 중 오류가 발생했습니다")
                 }

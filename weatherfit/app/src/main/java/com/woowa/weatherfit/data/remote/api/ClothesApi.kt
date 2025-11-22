@@ -21,7 +21,7 @@ interface ClothesApi {
     @POST("clothes")
     suspend fun registerClothes(
         @Part image: MultipartBody.Part,
-        @Part("data") data: RequestBody
+        @Part data: MultipartBody.Part
     ): ClothesDetailResponse
 
     @PUT("clothes/{clothesId}")

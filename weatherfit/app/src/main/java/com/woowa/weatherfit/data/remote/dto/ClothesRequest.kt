@@ -8,6 +8,6 @@ data class ClothesRegisterRequest(
     @SerialName("category")
     val category: String,
 
-    @SerialName("subCategory")
+    @SerialName("sub")
     val subCategory: String
 )
