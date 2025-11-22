@@ -75,11 +75,11 @@ fun CodyDetailScreen(
                     }
                 },
                 actions = {
-                    uiState.codyWithClothes?.cody?.season?.let { season ->
+                    uiState.codyWithClothes?.cody?.category?.let { category ->
                         FilterChip(
                             selected = true,
                             onClick = { },
-                            label = { Text(season.displayName) },
+                            label = { Text(category.displayName) },
                             colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = ChipSelected,
                                 selectedLabelColor = OnChipSelected
