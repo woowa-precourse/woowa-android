@@ -4,23 +4,22 @@ import com.woowa.weatherfit.domain.model.Cody
 import com.woowa.weatherfit.domain.model.CodyClothItem
 import com.woowa.weatherfit.domain.model.Season
 import com.woowa.weatherfit.domain.repository.CodyRepository
-import java.io.File
 import javax.inject.Inject
 
-class AddCodyUseCase @Inject constructor(
+class UpdateCodyUseCase @Inject constructor(
     private val codyRepository: CodyRepository
 ) {
     suspend operator fun invoke(
-        thumbnail: File,
+        id: Long,
         clothItems: List<CodyClothItem>,
         category: Season
     ): Result<Cody> {
         return try {
-            val createdCody = codyRepository.createOutfitRemote(thumbnail, clothItems, category)
+            val updatedCody = codyRepository.updateOutfitRemote(id, clothItems, category)
 
-            codyRepository.insertCody(createdCody)
+            codyRepository.updateCody(updatedCody)
 
-            Result.success(createdCody)
+            Result.success(updatedCody)
         } catch (e: Exception) {
             Result.failure(e)
         }
