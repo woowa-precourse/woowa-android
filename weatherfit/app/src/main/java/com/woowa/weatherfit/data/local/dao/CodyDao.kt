@@ -14,7 +14,7 @@ interface CodyDao {
     @Query("SELECT * FROM codies ORDER BY createdAt DESC")
     fun getAllCodies(): Flow<List<CodyEntity>>
 
-    @Query("SELECT * FROM codies WHERE season = :season ORDER BY createdAt DESC")
+    @Query("SELECT * FROM codies WHERE category = :season ORDER BY createdAt DESC")
     fun getCodiesBySeason(season: String): Flow<List<CodyEntity>>
 
     @Query("SELECT * FROM codies WHERE id = :id")

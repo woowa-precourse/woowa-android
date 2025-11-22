@@ -25,7 +25,9 @@ object DatabaseModule {
             context,
             WeatherFitDatabase::class.java,
             WeatherFitDatabase.DATABASE_NAME
-        ).build()
+        )
+            .fallbackToDestructiveMigration()
+            .build()
     }
 
     @Provides

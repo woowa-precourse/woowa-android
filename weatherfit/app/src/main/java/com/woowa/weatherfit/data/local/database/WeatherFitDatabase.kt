@@ -9,7 +9,7 @@ import com.woowa.weatherfit.data.local.entity.CodyEntity
 
 @Database(
     entities = [ClothEntity::class, CodyEntity::class],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class WeatherFitDatabase : RoomDatabase() {
