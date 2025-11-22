@@ -33,6 +33,7 @@ data class ClothListUiState(
 
 // Add Cloth
 data class AddClothUiState(
+    val clothId: Long? = null,
     val imageUri: Uri? = null,
     val selectedMainCategory: MainCategory = MainCategory.TOP,
     val selectedSubCategory: SubCategory = SubCategory.SHORT_SLEEVE,
@@ -41,7 +42,8 @@ data class AddClothUiState(
     val availableSubCategories: List<SubCategory> = SubCategory.getByMainCategory(MainCategory.TOP),
     val isSaving: Boolean = false,
     val saveSuccess: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val isEditMode: Boolean = false
 )
 
 // Cody List

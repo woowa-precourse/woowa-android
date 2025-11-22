@@ -57,10 +57,17 @@ import com.woowa.weatherfit.ui.theme.Primary
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddClothScreen(
+    clothId: Long? = null,
     viewModel: AddClothViewModel = hiltViewModel(),
     onNavigateBack: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    LaunchedEffect(clothId) {
+        if (clothId != null) {
+            viewModel.loadCloth(clothId)
+        }
+    }
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -73,7 +80,7 @@ fun AddClothScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("옷 추가") },
+                title = { Text(if (uiState.isEditMode) "옷 수정" else "옷 추가") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
