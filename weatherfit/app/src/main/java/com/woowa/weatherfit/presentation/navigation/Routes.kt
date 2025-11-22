@@ -7,7 +7,16 @@ sealed class Routes(val route: String) {
     data object CodyList : Routes("cody_list")
 
     // Standalone Routes (no bottom bar)
-    data object AddCloth : Routes("add_cloth")
+    data object AddCloth : Routes("add_cloth?clothId={clothId}") {
+        fun createRoute(clothId: Long? = null) = if (clothId != null) {
+            "add_cloth?clothId=$clothId"
+        } else {
+            "add_cloth"
+        }
+    }
+    data object ClothDetail : Routes("cloth_detail/{clothId}") {
+        fun createRoute(clothId: Long) = "cloth_detail/$clothId"
+    }
     data object CodyEdit : Routes("cody_edit")
     data object CodyDetail : Routes("cody_detail/{codyId}") {
         fun createRoute(codyId: Long) = "cody_detail/$codyId"
