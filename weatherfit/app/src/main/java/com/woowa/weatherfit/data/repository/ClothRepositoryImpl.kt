@@ -83,8 +83,8 @@ class ClothRepositoryImpl @Inject constructor(
         )
 
         val request = ClothesRegisterRequest(
-            category = category.name,
-            subCategory = subCategory.name
+            category = category.name.lowercase(),
+            subCategory = subCategory.name.lowercase()
         )
 
         val requestJson = json.encodeToString(request)
@@ -100,8 +100,8 @@ class ClothRepositoryImpl @Inject constructor(
         subCategory: SubCategory
     ): Result<Cloth> = runCatching {
         val request = ClothesRegisterRequest(
-            category = category.name,
-            subCategory = subCategory.name
+            category = category.name.lowercase(),
+            subCategory = subCategory.name.lowercase()
         )
 
         val response = clothesApi.updateClothes(clothesId, request)
@@ -124,8 +124,8 @@ class ClothRepositoryImpl @Inject constructor(
         size: Int
     ): Result<List<Cloth>> = runCatching {
         val response = clothesApi.getClothesList(
-            category = category?.name,
-            sub = sub?.name,
+            category = category?.name?.lowercase(),
+            sub = sub?.name?.lowercase(),
             cursor = cursor,
             size = size
         )
