@@ -3,7 +3,7 @@ package com.woowa.weatherfit.presentation.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.woowa.weatherfit.domain.model.Cloth
-import com.woowa.weatherfit.domain.model.Cody
+import com.woowa.weatherfit.domain.model.CodyClothItem
 import com.woowa.weatherfit.domain.model.MainCategory
 import com.woowa.weatherfit.domain.model.Season
 import com.woowa.weatherfit.domain.model.SubCategory
@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.io.File
 import javax.inject.Inject
 
 @HiltViewModel
@@ -80,19 +81,59 @@ class CodyEditViewModel @Inject constructor(
     fun toggleClothSelection(cloth: Cloth) {
         _uiState.update { state ->
             val currentSelected = state.selectedClothes.toMutableList()
+            val currentPositions = state.clothItemsWithPosition.toMutableMap()
+
             if (currentSelected.any { it.id == cloth.id }) {
                 currentSelected.removeAll { it.id == cloth.id }
+                currentPositions.remove(cloth.id)
             } else {
                 currentSelected.add(cloth)
+                val zIndex = currentPositions.size
+                currentPositions[cloth.id] = CodyClothItem(
+                    id = cloth.id,
+                    xCoord = 0.5,
+                    yCoord = 0.5,
+                    zIndex = zIndex,
+                    scale = 1.0
+                )
             }
-            state.copy(selectedClothes = currentSelected)
+            state.copy(
+                selectedClothes = currentSelected,
+                clothItemsWithPosition = currentPositions
+            )
         }
     }
 
     fun removeSelectedCloth(cloth: Cloth) {
         _uiState.update { state ->
-            state.copy(selectedClothes = state.selectedClothes.filter { it.id != cloth.id })
+            val updatedPositions = state.clothItemsWithPosition.toMutableMap()
+            updatedPositions.remove(cloth.id)
+            state.copy(
+                selectedClothes = state.selectedClothes.filter { it.id != cloth.id },
+                clothItemsWithPosition = updatedPositions
+            )
         }
+    }
+
+    fun updateClothPosition(clothId: Long, xCoord: Double, yCoord: Double, scale: Double = 1.0) {
+        _uiState.update { state ->
+            val currentPosition = state.clothItemsWithPosition[clothId]
+            if (currentPosition != null) {
+                val updatedPositions = state.clothItemsWithPosition.toMutableMap()
+                updatedPositions[clothId] = currentPosition.copy(
+                    xCoord = xCoord,
+                    yCoord = yCoord,
+                    scale = scale
+                )
+                state.copy(clothItemsWithPosition = updatedPositions)
+            } else {
+                state
+            }
+        }
+    }
+
+    fun setThumbnail(file: File) {
+        _uiState.update { it.copy(thumbnailFile = file) }
     }
 
     fun saveCody() {
@@ -103,16 +144,30 @@ class CodyEditViewModel @Inject constructor(
             return
         }
 
+        if (state.thumbnailFile == null) {
+            _uiState.update { it.copy(error = "썸네일을 설정해주세요") }
+            return
+        }
+
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true, error = null) }
 
             try {
-                val cody = Cody(
-                    clothIds = state.selectedClothes.map { it.id },
-                    season = state.selectedSeason
+                val clothItems = state.clothItemsWithPosition.values.toList()
+
+                val result = addCodyUseCase(
+                    thumbnail = state.thumbnailFile,
+                    clothItems = clothItems,
+                    category = state.selectedSeason
                 )
-                addCodyUseCase(cody)
-                _uiState.update { it.copy(isSaving = false, saveSuccess = true) }
+
+                result.onSuccess {
+                    _uiState.update { it.copy(isSaving = false, saveSuccess = true) }
+                }.onFailure { e ->
+                    _uiState.update {
+                        it.copy(isSaving = false, error = e.message ?: "저장 중 오류가 발생했습니다")
+                    }
+                }
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(isSaving = false, error = e.message ?: "저장 중 오류가 발생했습니다")

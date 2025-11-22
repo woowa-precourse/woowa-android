@@ -32,7 +32,16 @@ class CodyListViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             getAllCodiesUseCase().collectLatest { codies ->
-                _uiState.update { it.copy(codies = codies, isLoading = false) }
+                val fixedCodies = codies.filter { it.cody.isFixed }
+                val regularCodies = codies.filter { !it.cody.isFixed }
+                _uiState.update {
+                    it.copy(
+                        codies = codies,
+                        fixedCodies = fixedCodies,
+                        regularCodies = regularCodies,
+                        isLoading = false
+                    )
+                }
             }
         }
     }

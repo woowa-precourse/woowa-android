@@ -3,6 +3,7 @@ package com.woowa.weatherfit.presentation.state
 import android.net.Uri
 import com.woowa.weatherfit.domain.model.Cloth
 import com.woowa.weatherfit.domain.model.ClothColor
+import com.woowa.weatherfit.domain.model.CodyClothItem
 import com.woowa.weatherfit.domain.model.CodyWithClothes
 import com.woowa.weatherfit.domain.model.MainCategory
 import com.woowa.weatherfit.domain.model.Region
@@ -10,6 +11,7 @@ import com.woowa.weatherfit.domain.model.Season
 import com.woowa.weatherfit.domain.model.SubCategory
 import com.woowa.weatherfit.domain.model.TemperatureRange
 import com.woowa.weatherfit.domain.model.Weather
+import java.io.File
 
 // Home
 data class HomeUiState(
@@ -48,6 +50,8 @@ data class AddClothUiState(
 data class CodyListUiState(
     val isLoading: Boolean = true,
     val codies: List<CodyWithClothes> = emptyList(),
+    val fixedCodies: List<CodyWithClothes> = emptyList(),
+    val regularCodies: List<CodyWithClothes> = emptyList(),
     val isEditMode: Boolean = false
 )
 
@@ -57,10 +61,12 @@ data class CodyEditUiState(
     val allClothes: List<Cloth> = emptyList(),
     val filteredClothes: List<Cloth> = emptyList(),
     val selectedClothes: List<Cloth> = emptyList(),
+    val clothItemsWithPosition: Map<Long, CodyClothItem> = emptyMap(),
     val selectedSeason: Season = Season.AUTUMN,
     val selectedMainCategory: MainCategory = MainCategory.TOP,
     val selectedSubCategory: SubCategory? = null,
     val availableSubCategories: List<SubCategory> = SubCategory.getByMainCategory(MainCategory.TOP),
+    val thumbnailFile: File? = null,
     val isSaving: Boolean = false,
     val saveSuccess: Boolean = false,
     val error: String? = null
