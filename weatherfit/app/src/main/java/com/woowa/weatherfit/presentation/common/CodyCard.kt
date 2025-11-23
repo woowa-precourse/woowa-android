@@ -41,18 +41,17 @@ fun CodyCard(
                 .fillMaxSize()
                 .padding(8.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceEvenly
+            verticalArrangement = Arrangement.Center
         ) {
-            codyWithClothes.clothes.take(3).forEach { cloth ->
-                AsyncImage(
-                    model = cloth.imageUrl,
-                    contentDescription = null,
-                    modifier = Modifier
-                        .size(imageSize)
-                        .clip(RoundedCornerShape(8.dp)),
-                    contentScale = ContentScale.Crop
-                )
-            }
+            // Display the outfit thumbnail
+            AsyncImage(
+                model = codyWithClothes.cody.thumbnail,
+                contentDescription = "Outfit thumbnail",
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(RoundedCornerShape(8.dp)),
+                contentScale = ContentScale.Crop
+            )
         }
     }
 }

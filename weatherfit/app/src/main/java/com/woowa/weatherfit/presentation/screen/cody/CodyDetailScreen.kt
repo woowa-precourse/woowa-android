@@ -96,7 +96,7 @@ fun CodyDetailScreen(
                             )
                         }
                     }
-                    IconButton(onClick = { viewModel.deleteCody() }) {
+                    IconButton(onClick = { viewModel.deleteCody(onNavigateBack) }) {
                         Icon(Icons.Default.MoreVert, "Delete")
                     }
                 }

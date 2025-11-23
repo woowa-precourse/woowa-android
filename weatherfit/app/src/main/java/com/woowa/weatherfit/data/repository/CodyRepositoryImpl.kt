@@ -36,7 +36,7 @@ class CodyRepositoryImpl @Inject constructor(
         val clothesJson = Json.encodeToString(clothItems.map { it.toClothesRequest() })
         val clothesPart = clothesJson.toRequestBody("application/json".toMediaTypeOrNull())
 
-        val categoryPart = category.name.toRequestBody("text/plain".toMediaTypeOrNull())
+        val categoryPart = category.name.uppercase().toRequestBody("text/plain".toMediaTypeOrNull())
 
         val response = outfitApi.createOutfit(thumbnailPart, clothesPart, categoryPart)
         return response.toCody()

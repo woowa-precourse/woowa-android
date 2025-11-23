@@ -29,6 +29,7 @@ data class UpdateOutfitRequest(
 @Serializable
 data class OutfitClothesResponse(
     val id: Long,
+    val image: String,
     val xCoord: Double,
     val yCoord: Double,
     val zIndex: Int,

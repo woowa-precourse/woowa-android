@@ -58,13 +58,17 @@ class CodyDetailViewModel @Inject constructor(
 
     fun toggleFixed() {
         viewModelScope.launch {
-            toggleCodyFixedUseCase(codyId)
+            toggleCodyFixedUseCase(codyId).onSuccess {
+                loadCodyDetail()
+            }
         }
     }
 
-    fun deleteCody() {
+    fun deleteCody(onDeleted: () -> Unit) {
         viewModelScope.launch {
-            deleteCodyUseCase(codyId)
+            deleteCodyUseCase(codyId).onSuccess {
+                onDeleted()
+            }
         }
     }
 }

@@ -48,6 +48,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -102,7 +103,10 @@ fun CodyEditScreen(
     var canvasView by remember { mutableStateOf<View?>(null) }
 
     LaunchedEffect(uiState.saveSuccess) {
-        if (uiState.saveSuccess) onNavigateBack()
+        if (uiState.saveSuccess) {
+            onNavigateBack()
+            viewModel.resetState()
+        }
     }
 
     Scaffold(topBar = { TopAppBar(title = { Text("코디 조합") }) }) { paddingValues ->
@@ -284,20 +288,22 @@ fun DraggableOutfitCanvas(
     AndroidView(
         factory = { context ->
             ComposeView(context).apply {
-                setContent {
-                    CanvasContent(
-                        selectedClothes = selectedClothes,
-                        clothItemsWithPosition = clothItemsWithPosition,
-                        selectedClothId = selectedClothId,
-                        canvasSize = canvasSize,
-                        onSelectCloth = onSelectCloth,
-                        onUpdatePosition = onUpdatePosition,
-                        onUpdateZIndex = onUpdateZIndex,
-                        onRemoveCloth = onRemoveCloth,
-                        onSizeChanged = { size -> canvasSize = size }
-                    )
-                }
                 onViewReady(this)
+            }
+        },
+        update = { view ->
+            (view as ComposeView).setContent {
+                CanvasContent(
+                    selectedClothes = selectedClothes,
+                    clothItemsWithPosition = clothItemsWithPosition,
+                    selectedClothId = selectedClothId,
+                    canvasSize = canvasSize,
+                    onSelectCloth = onSelectCloth,
+                    onUpdatePosition = onUpdatePosition,
+                    onUpdateZIndex = onUpdateZIndex,
+                    onRemoveCloth = onRemoveCloth,
+                    onSizeChanged = { size -> canvasSize = size }
+                )
             }
         },
         modifier = modifier
@@ -333,30 +339,34 @@ private fun CanvasContent(
             )
         } else {
             // Draw clothes sorted by z-index
-            selectedClothes
-                .mapNotNull { cloth ->
-                    clothItemsWithPosition[cloth.id]?.let { item -> cloth to item }
-                }
-                .sortedBy { (_, item) -> item.zIndex }
-                .forEach { (cloth, item) ->
-                    DraggableClothItem(
-                        cloth = cloth,
-                        position = item,
-                        isSelected = cloth.id == selectedClothId,
-                        canvasSize = canvasSize,
-                        onSelect = { onSelectCloth(cloth.id) },
-                        onUpdatePosition = { newX, newY ->
-                            onUpdatePosition(cloth.id, newX, newY, item.scale)
-                        },
-                        onUpdateScale = { newScale ->
-                            onUpdatePosition(cloth.id, item.xCoord, item.yCoord, newScale)
-                        },
-                        onUpdateZIndex = { newZIndex ->
-                            onUpdateZIndex(cloth.id, newZIndex)
-                        },
-                        onRemove = { onRemoveCloth(cloth) }
-                    )
-                }
+            key(selectedClothes.size, clothItemsWithPosition.size) {
+                selectedClothes
+                    .mapNotNull { cloth ->
+                        clothItemsWithPosition[cloth.id]?.let { item -> cloth to item }
+                    }
+                    .sortedBy { (_, item) -> item.zIndex }
+                    .forEach { (cloth, item) ->
+                        key(cloth.id) {
+                            DraggableClothItem(
+                                cloth = cloth,
+                                position = item,
+                                isSelected = cloth.id == selectedClothId,
+                                canvasSize = canvasSize,
+                                onSelect = { onSelectCloth(cloth.id) },
+                                onUpdatePosition = { newX, newY ->
+                                    onUpdatePosition(cloth.id, newX, newY, item.scale)
+                                },
+                                onUpdateScale = { newScale ->
+                                    onUpdatePosition(cloth.id, item.xCoord, item.yCoord, newScale)
+                                },
+                                onUpdateZIndex = { newZIndex ->
+                                    onUpdateZIndex(cloth.id, newZIndex)
+                                },
+                                onRemove = { onRemoveCloth(cloth) }
+                            )
+                        }
+                    }
+            }
         }
     }
 }
@@ -373,8 +383,12 @@ fun DraggableClothItem(
     onUpdateZIndex: (Int) -> Unit,
     onRemove: () -> Unit
 ) {
-    var offsetX by remember(position.xCoord) { mutableStateOf((position.xCoord * canvasSize.x).toFloat()) }
-    var offsetY by remember(position.yCoord) { mutableStateOf((position.yCoord * canvasSize.y).toFloat()) }
+    var offsetX by remember(position.xCoord, canvasSize.x) {
+        mutableStateOf((position.xCoord * canvasSize.x.coerceAtLeast(1)).toFloat())
+    }
+    var offsetY by remember(position.yCoord, canvasSize.y) {
+        mutableStateOf((position.yCoord * canvasSize.y.coerceAtLeast(1)).toFloat())
+    }
 
     val clothSize = (80 * position.scale).dp
 
@@ -395,11 +409,6 @@ fun DraggableClothItem(
             modifier = Modifier
                 .fillMaxSize()
                 .clip(RoundedCornerShape(8.dp))
-                .border(
-                    width = if (isSelected) 3.dp else 2.dp,
-                    color = if (isSelected) Color.Blue else Primary,
-                    shape = RoundedCornerShape(8.dp)
-                )
                 .pointerInput(Unit) {
                     detectTapGestures(
                         onTap = { onSelect() }
