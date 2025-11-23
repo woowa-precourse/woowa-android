@@ -7,7 +7,7 @@ import com.woowa.weatherfit.domain.model.Region
 import com.woowa.weatherfit.domain.model.Season
 import com.woowa.weatherfit.domain.model.TemperatureRange
 import com.woowa.weatherfit.domain.model.Weather
-import com.woowa.weatherfit.domain.usecase.cody.GetCodiesBySeasonUseCase
+import com.woowa.weatherfit.domain.usecase.cody.GetAllCodiesUseCase
 import com.woowa.weatherfit.domain.usecase.region.GetSelectedRegionUseCase
 import com.woowa.weatherfit.domain.usecase.weather.GetWeatherUseCase
 import com.woowa.weatherfit.presentation.state.HomeUiState
@@ -24,7 +24,7 @@ import javax.inject.Inject
 class HomeViewModel @Inject constructor(
     private val getWeatherUseCase: GetWeatherUseCase,
     private val getSelectedRegionUseCase: GetSelectedRegionUseCase,
-    private val getCodiesBySeasonUseCase: GetCodiesBySeasonUseCase
+    private val getAllCodiesUseCase: GetAllCodiesUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -74,8 +74,12 @@ class HomeViewModel @Inject constructor(
 
     private fun loadRecommendedCodies(season: Season) {
         viewModelScope.launch {
-            getCodiesBySeasonUseCase(season).collectLatest { codies ->
-                _uiState.update { it.copy(recommendedCodies = codies) }
+            getAllCodiesUseCase().onSuccess { (fixedCodies, regularCodies) ->
+                // 시즌에 맞는 코디만 필터링
+                val allCodies = (fixedCodies + regularCodies).map { cody ->
+                    CodyWithClothes(cody, emptyList())
+                }.filter { it.cody.category == season }
+                _uiState.update { it.copy(recommendedCodies = allCodies) }
             }
         }
     }

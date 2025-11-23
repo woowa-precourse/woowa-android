@@ -17,9 +17,6 @@ class AddCodyUseCase @Inject constructor(
     ): Result<Cody> {
         return try {
             val createdCody = codyRepository.createOutfitRemote(thumbnail, clothItems, category)
-
-            codyRepository.insertCody(createdCody)
-
             Result.success(createdCody)
         } catch (e: Exception) {
             Result.failure(e)

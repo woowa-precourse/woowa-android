@@ -38,13 +38,16 @@ class CodyDetailViewModel @Inject constructor(
     private fun loadCodyDetail() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
-            getCodyDetailUseCase(codyId).collectLatest { codyWithClothes ->
+            getCodyDetailUseCase(codyId).onSuccess { cody ->
+                val codyWithClothes = CodyWithClothes(cody, emptyList())
                 _uiState.update {
                     it.copy(
                         codyWithClothes = codyWithClothes,
                         isLoading = false
                     )
                 }
+            }.onFailure {
+                _uiState.update { it.copy(isLoading = false) }
             }
         }
     }

@@ -75,6 +75,14 @@ fun ClothListScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var isEditMode by remember { mutableStateOf(false) }
 
+    // 화면이 다시 보여질 때마다 리스트 새로고침
+    androidx.compose.runtime.DisposableEffect(Unit) {
+        onDispose { }
+    }
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        viewModel.refreshClothes()
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(

@@ -7,13 +7,11 @@ import com.woowa.weatherfit.domain.model.MainCategory
 import com.woowa.weatherfit.domain.model.SubCategory
 import com.woowa.weatherfit.domain.usecase.cloth.DeleteClothUseCase
 import com.woowa.weatherfit.domain.usecase.cloth.GetAllClothesUseCase
-import com.woowa.weatherfit.domain.usecase.cloth.GetClothesByCategoryUseCase
 import com.woowa.weatherfit.presentation.state.ClothListUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -21,7 +19,6 @@ import javax.inject.Inject
 @HiltViewModel
 class ClothListViewModel @Inject constructor(
     private val getAllClothesUseCase: GetAllClothesUseCase,
-    private val getClothesByCategoryUseCase: GetClothesByCategoryUseCase,
     private val deleteClothUseCase: DeleteClothUseCase
 ) : ViewModel() {
 
@@ -32,10 +29,14 @@ class ClothListViewModel @Inject constructor(
         loadClothes()
     }
 
+    fun refreshClothes() {
+        loadClothes()
+    }
+
     private fun loadClothes() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
-            getAllClothesUseCase().collectLatest { clothes ->
+            getAllClothesUseCase().onSuccess { clothes ->
                 _uiState.update { state ->
                     state.copy(
                         clothes = clothes,
@@ -43,6 +44,8 @@ class ClothListViewModel @Inject constructor(
                     )
                 }
                 applyFilters()
+            }.onFailure {
+                _uiState.update { it.copy(isLoading = false) }
             }
         }
     }

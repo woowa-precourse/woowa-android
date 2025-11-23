@@ -36,7 +36,7 @@ class CodyEditViewModel @Inject constructor(
     private fun loadClothes() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
-            getAllClothesUseCase().collectLatest { clothes ->
+            getAllClothesUseCase().onSuccess { clothes ->
                 _uiState.update { state ->
                     state.copy(
                         allClothes = clothes,
@@ -44,6 +44,8 @@ class CodyEditViewModel @Inject constructor(
                     )
                 }
                 applyFilters()
+            }.onFailure {
+                _uiState.update { it.copy(isLoading = false) }
             }
         }
     }

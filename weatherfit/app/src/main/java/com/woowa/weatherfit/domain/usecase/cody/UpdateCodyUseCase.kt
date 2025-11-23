@@ -16,9 +16,6 @@ class UpdateCodyUseCase @Inject constructor(
     ): Result<Cody> {
         return try {
             val updatedCody = codyRepository.updateOutfitRemote(id, clothItems, category)
-
-            codyRepository.updateCody(updatedCody)
-
             Result.success(updatedCody)
         } catch (e: Exception) {
             Result.failure(e)

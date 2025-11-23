@@ -19,10 +19,7 @@ class AddClothUseCase @Inject constructor(
             imageFile = imageFile,
             category = cloth.mainCategory,
             subCategory = cloth.subCategory
-        ).onSuccess { serverCloth ->
-            // 서버에 성공적으로 저장되면 로컬 DB에도 저장
-            clothRepository.insertCloth(serverCloth)
-        }
+        )
     }
 
     private fun uriToFile(uri: Uri): File {

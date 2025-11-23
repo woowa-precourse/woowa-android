@@ -31,17 +31,20 @@ class CodyListViewModel @Inject constructor(
     private fun loadCodies() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
-            getAllCodiesUseCase().collectLatest { codies ->
-                val fixedCodies = codies.filter { it.cody.isFixed }
-                val regularCodies = codies.filter { !it.cody.isFixed }
+            getAllCodiesUseCase().onSuccess { (fixedList, regularList) ->
+                val fixedCodies = fixedList.map { CodyWithClothes(it, emptyList()) }
+                val regularCodies = regularList.map { CodyWithClothes(it, emptyList()) }
+                val allCodies = fixedCodies + regularCodies
                 _uiState.update {
                     it.copy(
-                        codies = codies,
+                        codies = allCodies,
                         fixedCodies = fixedCodies,
                         regularCodies = regularCodies,
                         isLoading = false
                     )
                 }
+            }.onFailure {
+                _uiState.update { it.copy(isLoading = false) }
             }
         }
     }

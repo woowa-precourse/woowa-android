@@ -7,7 +7,7 @@ import javax.inject.Inject
 class GetClothByIdUseCase @Inject constructor(
     private val clothRepository: ClothRepository
 ) {
-    suspend operator fun invoke(id: Long): Cloth? {
-        return clothRepository.getClothById(id)
+    suspend operator fun invoke(id: Long): Result<Cloth> {
+        return clothRepository.fetchClothesDetailFromServer(id)
     }
 }

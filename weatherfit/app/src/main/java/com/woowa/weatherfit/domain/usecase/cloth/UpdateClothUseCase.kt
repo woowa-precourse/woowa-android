@@ -12,9 +12,6 @@ class UpdateClothUseCase @Inject constructor(
             clothesId = cloth.id,
             category = cloth.mainCategory,
             subCategory = cloth.subCategory
-        ).onSuccess { serverCloth ->
-            // 서버에 성공적으로 업데이트되면 로컬 DB도 업데이트
-            clothRepository.updateCloth(serverCloth)
-        }
+        )
     }
 }

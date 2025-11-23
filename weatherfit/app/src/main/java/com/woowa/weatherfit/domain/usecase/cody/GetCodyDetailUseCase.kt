@@ -1,14 +1,17 @@
 package com.woowa.weatherfit.domain.usecase.cody
 
-import com.woowa.weatherfit.domain.model.CodyWithClothes
+import com.woowa.weatherfit.domain.model.Cody
 import com.woowa.weatherfit.domain.repository.CodyRepository
-import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 
 class GetCodyDetailUseCase @Inject constructor(
     private val codyRepository: CodyRepository
 ) {
-    operator fun invoke(codyId: Long): Flow<CodyWithClothes?> {
-        return codyRepository.getCodyWithClothes(codyId)
+    suspend operator fun invoke(codyId: Long): Result<Cody> {
+        return try {
+            Result.success(codyRepository.getOutfitDetailRemote(codyId))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 }

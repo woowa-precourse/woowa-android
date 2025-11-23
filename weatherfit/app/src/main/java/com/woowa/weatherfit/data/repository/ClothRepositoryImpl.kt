@@ -1,16 +1,11 @@
 package com.woowa.weatherfit.data.repository
 
-import com.woowa.weatherfit.data.local.dao.ClothDao
-import com.woowa.weatherfit.data.local.entity.ClothEntity
 import com.woowa.weatherfit.data.remote.api.ClothesApi
 import com.woowa.weatherfit.data.remote.dto.ClothesRegisterRequest
 import com.woowa.weatherfit.domain.model.Cloth
 import com.woowa.weatherfit.domain.model.MainCategory
 import com.woowa.weatherfit.domain.model.SubCategory
-import com.woowa.weatherfit.domain.model.TemperatureRange
 import com.woowa.weatherfit.domain.repository.ClothRepository
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -21,54 +16,9 @@ import java.io.File
 import javax.inject.Inject
 
 class ClothRepositoryImpl @Inject constructor(
-    private val clothDao: ClothDao,
     private val clothesApi: ClothesApi,
     private val json: Json
 ) : ClothRepository {
-
-    override fun getAllClothes(): Flow<List<Cloth>> {
-        return clothDao.getAllClothes().map { entities ->
-            entities.map { it.toDomain() }
-        }
-    }
-
-    override fun getClothesByMainCategory(mainCategory: MainCategory): Flow<List<Cloth>> {
-        return clothDao.getClothesByMainCategory(mainCategory.name).map { entities ->
-            entities.map { it.toDomain() }
-        }
-    }
-
-    override fun getClothesBySubCategory(subCategory: SubCategory): Flow<List<Cloth>> {
-        return clothDao.getClothesBySubCategory(subCategory.name).map { entities ->
-            entities.map { it.toDomain() }
-        }
-    }
-
-    override fun getClothesByTemperatureRange(temperatureRange: TemperatureRange): Flow<List<Cloth>> {
-        return clothDao.getClothesByTemperatureRange(temperatureRange.name).map { entities ->
-            entities.map { it.toDomain() }
-        }
-    }
-
-    override suspend fun getClothById(id: Long): Cloth? {
-        return clothDao.getClothById(id)?.toDomain()
-    }
-
-    override suspend fun insertCloth(cloth: Cloth): Long {
-        return clothDao.insertCloth(ClothEntity.fromDomain(cloth))
-    }
-
-    override suspend fun updateCloth(cloth: Cloth) {
-        clothDao.updateCloth(ClothEntity.fromDomain(cloth))
-    }
-
-    override suspend fun deleteCloth(cloth: Cloth) {
-        clothDao.deleteCloth(ClothEntity.fromDomain(cloth))
-    }
-
-    override suspend fun deleteClothById(id: Long) {
-        clothDao.deleteClothById(id)
-    }
 
     // Server API methods
     override suspend fun registerClothesToServer(
@@ -83,15 +33,18 @@ class ClothRepositoryImpl @Inject constructor(
         )
 
         val request = ClothesRegisterRequest(
-            category = category.name,
-            subCategory = subCategory.serverValue
+            category = category.name.lowercase(),
+            subCategory = subCategory.serverValue.lowercase()
         )
 
         val requestJson = json.encodeToString(request)
         val requestBody = requestJson.toRequestBody("application/json".toMediaTypeOrNull())
         val dataPart = MultipartBody.Part.createFormData("data", null, requestBody)
 
-        val response = clothesApi.registerClothes(imagePart, dataPart)
+        val response = clothesApi.registerClothes(
+            image = imagePart,
+            data = dataPart
+        )
         response.toDomain()
     }
 

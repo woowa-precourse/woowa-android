@@ -32,18 +32,19 @@ class AddClothViewModel @Inject constructor(
 
     fun loadCloth(clothId: Long) {
         viewModelScope.launch {
-            val cloth = getClothByIdUseCase(clothId) ?: return@launch
-            _uiState.update {
-                it.copy(
-                    clothId = clothId,
-                    imageUri = Uri.parse(cloth.imageUrl),
-                    selectedMainCategory = cloth.mainCategory,
-                    selectedSubCategory = cloth.subCategory,
-                    selectedTemperatureRange = cloth.temperatureRange,
-                    selectedColor = cloth.color,
-                    availableSubCategories = SubCategory.getByMainCategory(cloth.mainCategory),
-                    isEditMode = true
-                )
+            getClothByIdUseCase(clothId).onSuccess { cloth ->
+                _uiState.update {
+                    it.copy(
+                        clothId = clothId,
+                        imageUri = Uri.parse(cloth.imageUrl),
+                        selectedMainCategory = cloth.mainCategory,
+                        selectedSubCategory = cloth.subCategory,
+                        selectedTemperatureRange = cloth.temperatureRange,
+                        selectedColor = cloth.color,
+                        availableSubCategories = SubCategory.getByMainCategory(cloth.mainCategory),
+                        isEditMode = true
+                    )
+                }
             }
         }
     }
