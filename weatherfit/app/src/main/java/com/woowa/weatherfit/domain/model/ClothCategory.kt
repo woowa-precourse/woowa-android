@@ -4,7 +4,8 @@ enum class MainCategory(val displayName: String) {
     TOP("상의"),
     OUTER("아우터"),
     BOTTOM("하의"),
-    ETC("기타")
+    SHOES("신발"),
+    ACCESSORY("액세서리")
 }
 
 enum class SubCategory(
@@ -39,11 +40,13 @@ enum class SubCategory(
     JOGGER("조거팬츠", MainCategory.BOTTOM, "JOGGER_PANTS"),
     SKIRT("스커트", MainCategory.BOTTOM, "SKIRT"),
 
-    // 기타
-    DRESS("원피스", MainCategory.ETC, "DRESS"),
-    HAT("모자", MainCategory.ETC, "HAT"),
-    SHOES("신발", MainCategory.ETC, "SHOES"),
-    TRAINING_SET("트레이닝복", MainCategory.ETC, "TRACKSUIT");
+    // 신발
+    SHOES("신발", MainCategory.SHOES, "SHOES"),
+
+    // 액세서리
+    DRESS("원피스", MainCategory.ACCESSORY, "DRESS"),
+    HAT("모자", MainCategory.ACCESSORY, "HAT"),
+    TRAINING_SET("트레이닝복", MainCategory.ACCESSORY, "TRACKSUIT");
 
     companion object {
         fun getByMainCategory(mainCategory: MainCategory): List<SubCategory> {

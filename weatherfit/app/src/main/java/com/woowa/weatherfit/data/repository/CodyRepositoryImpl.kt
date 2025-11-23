@@ -1,6 +1,7 @@
 package com.woowa.weatherfit.data.repository
 
 import com.woowa.weatherfit.data.remote.api.OutfitApi
+import com.woowa.weatherfit.data.remote.dto.UpdateOutfitRequest
 import com.woowa.weatherfit.data.remote.dto.toCody
 import com.woowa.weatherfit.data.remote.dto.toClothesRequest
 import com.woowa.weatherfit.domain.model.Cody
@@ -64,12 +65,12 @@ class CodyRepositoryImpl @Inject constructor(
         clothItems: List<CodyClothItem>,
         category: Season
     ): Cody {
-        val clothesJson = Json.encodeToString(clothItems.map { it.toClothesRequest() })
-        val clothesPart = clothesJson.toRequestBody("application/json".toMediaTypeOrNull())
+        val request = UpdateOutfitRequest(
+            clothes = clothItems.map { it.toClothesRequest() },
+            category = category.name.uppercase()
+        )
 
-        val categoryPart = category.name.toRequestBody("text/plain".toMediaTypeOrNull())
-
-        val response = outfitApi.updateOutfit(id, clothesPart, categoryPart)
+        val response = outfitApi.updateOutfit(id, request)
         return response.toCody()
     }
 
@@ -78,6 +79,6 @@ class CodyRepositoryImpl @Inject constructor(
     }
 
     override suspend fun toggleFixed(id: Long) {
-        // TODO: 서버 API에 toggleFixed 엔드포인트 추가 필요
+        outfitApi.toggleFixed(id)
     }
 }

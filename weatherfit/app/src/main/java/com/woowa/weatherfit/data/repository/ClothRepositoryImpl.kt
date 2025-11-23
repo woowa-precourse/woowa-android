@@ -32,18 +32,10 @@ class ClothRepositoryImpl @Inject constructor(
             body = imageFile.asRequestBody("image/*".toMediaTypeOrNull())
         )
 
-        val request = ClothesRegisterRequest(
-            category = category.name.lowercase(),
-            subCategory = subCategory.serverValue.lowercase()
-        )
-
-        val requestJson = json.encodeToString(request)
-        val requestBody = requestJson.toRequestBody("application/json".toMediaTypeOrNull())
-        val dataPart = MultipartBody.Part.createFormData("data", null, requestBody)
-
         val response = clothesApi.registerClothes(
             image = imagePart,
-            data = dataPart
+            category = category.name.uppercase(),
+            subCategory = subCategory.serverValue.uppercase()
         )
         response.toDomain()
     }
@@ -53,12 +45,11 @@ class ClothRepositoryImpl @Inject constructor(
         category: MainCategory,
         subCategory: SubCategory
     ): Result<Cloth> = runCatching {
-        val request = ClothesRegisterRequest(
-            category = category.name.lowercase(),
-            subCategory = subCategory.name.lowercase()
+        val response = clothesApi.updateClothes(
+            clothesId = clothesId,
+            category = category.name.uppercase(),
+            subCategory = subCategory.serverValue.uppercase()
         )
-
-        val response = clothesApi.updateClothes(clothesId, request)
         response.toDomain()
     }
 
@@ -78,12 +69,12 @@ class ClothRepositoryImpl @Inject constructor(
         size: Int
     ): Result<List<Cloth>> = runCatching {
         val response = clothesApi.getClothesList(
-            category = category?.name?.lowercase(),
-            sub = sub?.name?.lowercase(),
+            category = category?.name?.uppercase(),
+            sub = sub?.serverValue?.uppercase(),
             cursor = cursor,
             size = size
         )
 
-        response.toDomain()
+        response.map { it.toDomain() }
     }
 }

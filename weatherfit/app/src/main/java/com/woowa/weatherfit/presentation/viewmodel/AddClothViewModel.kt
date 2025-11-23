@@ -112,6 +112,10 @@ class AddClothViewModel @Inject constructor(
         }
     }
 
+    fun clearSaveSuccess() {
+        _uiState.update { it.copy(saveSuccess = false) }
+    }
+
     fun resetState() {
         _uiState.value = AddClothUiState()
     }

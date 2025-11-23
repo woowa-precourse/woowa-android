@@ -21,13 +21,15 @@ interface ClothesApi {
     @POST("clothes")
     suspend fun registerClothes(
         @Part image: MultipartBody.Part,
-        @Part data: MultipartBody.Part
+        @Query("category") category: String,
+        @Query("subCategory") subCategory: String
     ): ClothesDetailResponse
 
     @PUT("clothes/{clothesId}")
     suspend fun updateClothes(
         @Path("clothesId") clothesId: Long,
-        @Body data: ClothesRegisterRequest
+        @Query("category") category: String,
+        @Query("subCategory") subCategory: String
     ): ClothesDetailResponse
 
     @DELETE("clothes/{clothesId}")
@@ -46,5 +48,5 @@ interface ClothesApi {
         @Query("sub") sub: String? = null,
         @Query("cursor") cursor: Long? = null,
         @Query("size") size: Int = 20
-    ): ClothesListResponse
+    ): List<ClothesDetailResponse>
 }

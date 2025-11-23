@@ -74,7 +74,10 @@ fun AddClothScreen(
     ) { uri: Uri? -> viewModel.setImageUri(uri) }
 
     LaunchedEffect(uiState.saveSuccess) {
-        if (uiState.saveSuccess) onNavigateBack()
+        if (uiState.saveSuccess) {
+            onNavigateBack()
+            viewModel.clearSaveSuccess()
+        }
     }
 
     Scaffold(

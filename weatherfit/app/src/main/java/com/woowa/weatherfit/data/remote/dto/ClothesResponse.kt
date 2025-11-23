@@ -19,15 +19,16 @@ data class ClothesDetailResponse(
     @SerialName("category")
     val category: String,
 
-    @SerialName("category_sub")
-    val categorySub: String
+    @SerialName("subCategory")
+    val subCategory: String
 ) {
     fun toDomain(): Cloth {
         return Cloth(
             id = id,
             imageUrl = image,
             mainCategory = MainCategory.valueOf(category.uppercase()),
-            subCategory = SubCategory.valueOf(categorySub.uppercase()),
+            subCategory = SubCategory.fromServerValue(subCategory)
+                ?: SubCategory.entries.first { it.mainCategory.name == category.uppercase() },
             temperatureRange = TemperatureRange.COOL,
             color = null,
             createdAt = System.currentTimeMillis()
