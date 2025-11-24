@@ -16,11 +16,18 @@ import java.io.File
 // Home
 data class HomeUiState(
     val isLoading: Boolean = true,
-    val weather: Weather? = null,
-    val region: Region? = null,
-    val recommendedCodies: List<CodyWithClothes> = emptyList(),
+    val regionName: String? = null,
+    val temperature: Double? = null,
+    val weatherCondition: String? = null,
     val currentSeason: Season = Season.SPRING,
-    val error: String? = null
+    val recommendedOutfits: List<OutfitRecommendation> = emptyList(),
+    val error: String? = null,
+    val debugGpsInfo: String? = null  // 디버그용 GPS 정보
+)
+
+data class OutfitRecommendation(
+    val id: Long,
+    val thumbnail: String
 )
 
 // Cloth List
@@ -84,8 +91,9 @@ data class CodyDetailUiState(
 
 // Region Select
 data class RegionSelectUiState(
-    val searchQuery: String = "",
     val regions: List<Region> = emptyList(),
+    val groupedRegions: Map<com.woowa.weatherfit.domain.model.Province, List<Region>> = emptyMap(),
+    val selectedProvince: com.woowa.weatherfit.domain.model.Province? = null,
     val selectedRegion: Region? = null,
     val saveSuccess: Boolean = false
 )

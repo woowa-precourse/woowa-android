@@ -11,4 +11,6 @@ interface RegionRepository {
     fun searchRegions(query: String): List<Region>
 
     fun getAllRegions(): List<Region>
+
+    fun findNearestRegion(latitude: Double, longitude: Double): Region
 }

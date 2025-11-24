@@ -1,5 +1,6 @@
 package com.woowa.weatherfit.presentation.screen.home
 
+import android.Manifest
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -16,14 +17,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -32,7 +29,10 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -45,16 +45,14 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
-import com.woowa.weatherfit.domain.model.Cody
-import com.woowa.weatherfit.domain.model.CodyWithClothes
-import com.woowa.weatherfit.domain.model.HourlyForecast
-import com.woowa.weatherfit.domain.model.WeatherCondition
-import com.woowa.weatherfit.presentation.common.CodyCard
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import com.woowa.weatherfit.presentation.viewmodel.HomeViewModel
 import com.woowa.weatherfit.ui.theme.CardShape
 import com.woowa.weatherfit.ui.theme.WeatherGradientEnd
 import com.woowa.weatherfit.ui.theme.WeatherGradientStart
 
+@OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel(),
@@ -62,6 +60,32 @@ fun HomeScreen(
     onNavigateToCodyDetail: (Long) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    // 위치 권한 요청
+    val locationPermissionsState = rememberMultiplePermissionsState(
+        permissions = listOf(
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.ACCESS_COARSE_LOCATION
+        )
+    )
+
+    // GPS 위치를 한 번만 가져왔는지 체크 (앱 재시작하면 리셋됨)
+    val hasLocationBeenFetched = rememberSaveable { mutableStateOf(false) }
+
+    // 화면이 처음 표시될 때 권한 요청
+    LaunchedEffect(Unit) {
+        if (!locationPermissionsState.allPermissionsGranted) {
+            locationPermissionsState.launchMultiplePermissionRequest()
+        }
+    }
+
+    // 권한이 승인되면 현재 위치로 업데이트 (한 번만)
+    LaunchedEffect(locationPermissionsState.allPermissionsGranted) {
+        if (locationPermissionsState.allPermissionsGranted && !hasLocationBeenFetched.value) {
+            viewModel.updateLocationToCurrentPosition()
+            hasLocationBeenFetched.value = true
+        }
+    }
 
     if (uiState.isLoading) {
         Box(
@@ -79,12 +103,11 @@ fun HomeScreen(
     ) {
         // Weather Section
         WeatherSection(
-            location = uiState.region?.name ?: "위치 선택",
-            temperature = uiState.weather?.temperature ?: 0,
-            description = uiState.weather?.description ?: "",
-            minTemp = uiState.weather?.minTemperature ?: 0,
-            maxTemp = uiState.weather?.maxTemperature ?: 0,
-            hourlyForecasts = uiState.weather?.hourlyForecasts ?: emptyList(),
+            location = uiState.regionName ?: "위치 선택",
+            temperature = uiState.temperature?.toInt() ?: 0,
+            weatherCondition = uiState.weatherCondition ?: "",
+            season = uiState.currentSeason.displayName,
+            debugGpsInfo = uiState.debugGpsInfo,
             onMenuClick = onNavigateToRegionSelect,
             modifier = Modifier.weight(1f)
         )
@@ -92,9 +115,9 @@ fun HomeScreen(
         Spacer(modifier = Modifier.height(10.dp))
 
         // Recommended Cody Section
-        RecommendedCodySection(
-            codies = uiState.recommendedCodies,
-            onCodyClick = onNavigateToCodyDetail
+        RecommendedOutfitSection(
+            outfits = uiState.recommendedOutfits,
+            onOutfitClick = onNavigateToCodyDetail
         )
 
         Spacer(modifier = Modifier.height(10.dp))
@@ -105,10 +128,9 @@ fun HomeScreen(
 private fun WeatherSection(
     location: String,
     temperature: Int,
-    description: String,
-    minTemp: Int,
-    maxTemp: Int,
-    hourlyForecasts: List<HourlyForecast>,
+    weatherCondition: String,
+    season: String,
+    debugGpsInfo: String?,
     onMenuClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -168,12 +190,12 @@ private fun WeatherSection(
                 fontWeight = FontWeight.Light
             )
 
-            Text(text = description, color = Color.White, fontSize = 16.sp)
-            Text(text = "최고:${maxTemp}° 최저:${minTemp}°", color = Color.White, fontSize = 14.sp)
+            Text(text = weatherCondition, color = Color.White, fontSize = 16.sp)
+            Text(text = "계절: $season", color = Color.White, fontSize = 14.sp)
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Weather Tip
+            // Weather Info Card
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.9f)),
@@ -181,14 +203,18 @@ private fun WeatherSection(
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = "오후 8시쯤 청명한 상태가 예상됩니다. 돌풍의 풍속은 최대 4m/s입니다.",
+                        text = "오늘의 날씨에 맞는 코디를 추천해드립니다.",
                         style = MaterialTheme.typography.bodyMedium
                     )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        items(hourlyForecasts.take(5)) { forecast ->
-                            HourlyForecastItem(forecast)
-                        }
+
+                    // 디버그 GPS 정보 표시
+                    if (debugGpsInfo != null) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "🔍 디버그: $debugGpsInfo",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.Red
+                        )
                     }
                 }
             }
@@ -197,44 +223,42 @@ private fun WeatherSection(
 }
 
 @Composable
-private fun HourlyForecastItem(forecast: HourlyForecast) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(text = forecast.hour, style = MaterialTheme.typography.bodySmall)
-        Spacer(modifier = Modifier.height(4.dp))
-        Icon(
-            imageVector = when (forecast.weatherCondition) {
-                WeatherCondition.CLEAR, WeatherCondition.NIGHT_CLEAR -> Icons.Default.WbSunny
-                else -> Icons.Default.Cloud
-            },
-            contentDescription = null,
-            modifier = Modifier.size(24.dp)
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = "${forecast.temperature}°",
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Bold
-        )
-    }
-}
-
-@Composable
-private fun RecommendedCodySection(
-    codies: List<CodyWithClothes>,
-    onCodyClick: (Long) -> Unit
+private fun RecommendedOutfitSection(
+    outfits: List<com.woowa.weatherfit.presentation.state.OutfitRecommendation>,
+    onOutfitClick: (Long) -> Unit
 ) {
     LazyRow(
         contentPadding = PaddingValues(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        items(codies) { codyWithClothes ->
-            CodyCard(
-                codyWithClothes = codyWithClothes,
-                onClick = { onCodyClick(codyWithClothes.cody.id) },
+        items(outfits) { outfit ->
+            OutfitThumbnailCard(
+                outfit = outfit,
+                onClick = { onOutfitClick(outfit.id) },
                 modifier = Modifier
                     .width(150.dp)
                     .height(200.dp)
             )
         }
+    }
+}
+
+@Composable
+private fun OutfitThumbnailCard(
+    outfit: com.woowa.weatherfit.presentation.state.OutfitRecommendation,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.clickable(onClick = onClick),
+        shape = CardShape,
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        AsyncImage(
+            model = outfit.thumbnail,
+            contentDescription = "Outfit ${outfit.id}",
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop
+        )
     }
 }

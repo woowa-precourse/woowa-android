@@ -2,6 +2,7 @@ package com.woowa.weatherfit.di
 
 import com.woowa.weatherfit.data.remote.api.ClothesApi
 import com.woowa.weatherfit.data.remote.api.OutfitApi
+import com.woowa.weatherfit.data.remote.api.TodayApi
 import com.woowa.weatherfit.data.remote.api.WeatherApi
 import com.woowa.weatherfit.data.remote.interceptor.DeviceIdInterceptor
 import dagger.Module
@@ -81,5 +82,11 @@ object NetworkModule {
     @Singleton
     fun provideClothesApi(retrofit: Retrofit): ClothesApi {
         return retrofit.create(ClothesApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideTodayApi(retrofit: Retrofit): TodayApi {
+        return retrofit.create(TodayApi::class.java)
     }
 }

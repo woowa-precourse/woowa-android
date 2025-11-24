@@ -1,42 +1,45 @@
 package com.woowa.weatherfit.presentation.screen.region
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.woowa.weatherfit.domain.model.Province
 import com.woowa.weatherfit.domain.model.Region
 import com.woowa.weatherfit.presentation.viewmodel.RegionSelectViewModel
 import com.woowa.weatherfit.ui.theme.ButtonShape
 import com.woowa.weatherfit.ui.theme.Primary
-import com.woowa.weatherfit.ui.theme.SearchBarShape
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -53,7 +56,12 @@ fun RegionSelectScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { },
+                title = {
+                    Text(
+                        "지역 선택",
+                        style = MaterialTheme.typography.titleLarge
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
@@ -66,45 +74,97 @@ fun RegionSelectScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(16.dp)
         ) {
-            OutlinedTextField(
-                value = uiState.searchQuery,
-                onValueChange = viewModel::updateSearchQuery,
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("지역 검색") },
-                leadingIcon = { Icon(Icons.Default.Search, "Search") },
-                shape = SearchBarShape,
-                colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedBorderColor = Color.LightGray,
-                    focusedBorderColor = Primary
-                ),
-                singleLine = true
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            LazyColumn(modifier = Modifier.weight(1f)) {
-                items(uiState.regions) { region ->
+            // Two-column layout
+            Row(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+            ) {
+                // Left column: Province list
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                ) {
                     Text(
-                        text = region.name,
+                        text = "도/특별자치도",
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { viewModel.selectRegion(region) }
-                            .padding(vertical = 16.dp),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = if (region == uiState.selectedRegion) Primary else Color.Black
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
                     )
-                    HorizontalDivider(color = Color.LightGray)
+
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        items(uiState.groupedRegions.keys.toList()) { province ->
+                            ProvinceItem(
+                                province = province,
+                                isSelected = province == uiState.selectedProvince,
+                                onClick = { viewModel.selectProvince(province) }
+                            )
+                        }
+                    }
+                }
+
+                // Vertical divider
+                VerticalDivider(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .width(1.dp),
+                    color = Color.LightGray
+                )
+
+                // Right column: Region list
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                ) {
+                    Text(
+                        text = "시/군",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        val regionsToShow = uiState.selectedProvince?.let { province ->
+                            val allRegions = uiState.groupedRegions[province] ?: emptyList()
+                            if (allRegions.size <= 1) {
+                                // 광역시/특별시 - 그대로 표시
+                                allRegions
+                            } else {
+                                // 도 - 도 이름과 같은 것은 제외
+                                allRegions.filter { region ->
+                                    region.name != province.displayName
+                                }
+                            }
+                        } ?: emptyList()
+
+                        items(regionsToShow) { region ->
+                            RegionItem(
+                                region = region,
+                                isSelected = region == uiState.selectedRegion,
+                                onClick = { viewModel.selectRegion(region) }
+                            )
+                        }
+                    }
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
+            // Save button at bottom
             Button(
                 onClick = { viewModel.saveSelectedRegion() },
                 modifier = Modifier
                     .fillMaxWidth()
+                    .padding(16.dp)
                     .height(56.dp),
                 shape = ButtonShape,
                 colors = ButtonDefaults.buttonColors(containerColor = Primary),
@@ -114,4 +174,56 @@ fun RegionSelectScreen(
             }
         }
     }
+}
+
+@Composable
+private fun ProvinceItem(
+    province: Province,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .background(if (isSelected) Color(0xFFE3F2FD) else Color.Transparent)
+    ) {
+        // Blue indicator bar on the left
+        if (isSelected) {
+            Box(
+                modifier = Modifier
+                    .width(4.dp)
+                    .height(48.dp)
+                    .background(Primary)
+                    .align(Alignment.CenterStart)
+            )
+        }
+
+        Text(
+            text = province.displayName,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = if (isSelected) 20.dp else 16.dp, end = 16.dp)
+                .padding(vertical = 16.dp),
+            style = MaterialTheme.typography.bodyLarge,
+            color = if (isSelected) Primary else Color.Black
+        )
+    }
+}
+
+@Composable
+private fun RegionItem(
+    region: Region,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Text(
+        text = region.name,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 16.dp),
+        style = MaterialTheme.typography.bodyLarge,
+        color = if (isSelected) Primary else Color.Black
+    )
 }

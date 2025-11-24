@@ -79,6 +79,9 @@ dependencies {
     // Coil
     implementation(libs.coil.compose)
 
+    // Accompanist
+    implementation(libs.accompanist.permissions)
+
     // Location
     implementation(libs.play.services.location)
 

@@ -3,10 +3,12 @@ package com.woowa.weatherfit.di
 import com.woowa.weatherfit.data.repository.ClothRepositoryImpl
 import com.woowa.weatherfit.data.repository.CodyRepositoryImpl
 import com.woowa.weatherfit.data.repository.RegionRepositoryImpl
+import com.woowa.weatherfit.data.repository.TodayRepositoryImpl
 import com.woowa.weatherfit.data.repository.WeatherRepositoryImpl
 import com.woowa.weatherfit.domain.repository.ClothRepository
 import com.woowa.weatherfit.domain.repository.CodyRepository
 import com.woowa.weatherfit.domain.repository.RegionRepository
+import com.woowa.weatherfit.domain.repository.TodayRepository
 import com.woowa.weatherfit.domain.repository.WeatherRepository
 import dagger.Binds
 import dagger.Module
@@ -41,4 +43,10 @@ abstract class RepositoryModule {
     abstract fun bindRegionRepository(
         regionRepositoryImpl: RegionRepositoryImpl
     ): RegionRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindTodayRepository(
+        todayRepositoryImpl: TodayRepositoryImpl
+    ): TodayRepository
 }

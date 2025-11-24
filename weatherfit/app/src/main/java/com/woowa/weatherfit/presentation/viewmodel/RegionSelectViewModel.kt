@@ -2,6 +2,7 @@ package com.woowa.weatherfit.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.woowa.weatherfit.domain.model.Province
 import com.woowa.weatherfit.domain.model.Region
 import com.woowa.weatherfit.domain.usecase.region.SearchRegionsUseCase
 import com.woowa.weatherfit.domain.usecase.region.SetSelectedRegionUseCase
@@ -29,13 +30,12 @@ class RegionSelectViewModel @Inject constructor(
 
     private fun loadRegions() {
         val regions = searchRegionsUseCase("")
-        _uiState.update { it.copy(regions = regions) }
+        val grouped = regions.groupBy { it.province }
+        _uiState.update { it.copy(regions = regions, groupedRegions = grouped) }
     }
 
-    fun updateSearchQuery(query: String) {
-        _uiState.update { it.copy(searchQuery = query) }
-        val regions = searchRegionsUseCase(query)
-        _uiState.update { it.copy(regions = regions) }
+    fun selectProvince(province: Province) {
+        _uiState.update { it.copy(selectedProvince = province) }
     }
 
     fun selectRegion(region: Region) {
