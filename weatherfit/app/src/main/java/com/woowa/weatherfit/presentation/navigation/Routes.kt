@@ -17,7 +17,13 @@ sealed class Routes(val route: String) {
     data object ClothDetail : Routes("cloth_detail/{clothId}") {
         fun createRoute(clothId: Long) = "cloth_detail/$clothId"
     }
-    data object CodyEdit : Routes("cody_edit")
+    data object CodyEdit : Routes("cody_edit?codyId={codyId}") {
+        fun createRoute(codyId: Long? = null) = if (codyId != null) {
+            "cody_edit?codyId=$codyId"
+        } else {
+            "cody_edit"
+        }
+    }
     data object CodyDetail : Routes("cody_detail/{codyId}") {
         fun createRoute(codyId: Long) = "cody_detail/$codyId"
     }

@@ -67,7 +67,13 @@ data class OutfitDetailResponse(
     val id: Long,
     val thumbnail: String,
     val category: String,
-    val clothes: List<OutfitDetailClothesResponse>
+    val clothes: List<OutfitClothesResponse>
+)
+
+@Serializable
+data class ToggleFixedResponse(
+    val id: Long,
+    val fixed: Boolean
 )
 
 fun CodyClothItem.toClothesRequest() = ClothesRequest(

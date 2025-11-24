@@ -83,7 +83,7 @@ fun WeatherFitNavHost(
             composable(Routes.CodyList.route) {
                 CodyListScreen(
                     onNavigateToCodyEdit = {
-                        navController.navigate(Routes.CodyEdit.route)
+                        navController.navigate(Routes.CodyEdit.createRoute())
                     },
                     onNavigateToCodyDetail = { codyId ->
                         navController.navigate(Routes.CodyDetail.createRoute(codyId))
@@ -118,7 +118,15 @@ fun WeatherFitNavHost(
                 )
             }
 
-            composable(Routes.CodyEdit.route) {
+            composable(
+                route = Routes.CodyEdit.route,
+                arguments = listOf(
+                    navArgument("codyId") {
+                        type = NavType.LongType
+                        defaultValue = -1L
+                    }
+                )
+            ) {
                 CodyEditScreen(
                     onNavigateBack = { navController.popBackStack() }
                 )
@@ -132,6 +140,9 @@ fun WeatherFitNavHost(
                     onNavigateBack = { navController.popBackStack() },
                     onNavigateToCodyDetail = { codyId ->
                         navController.navigate(Routes.CodyDetail.createRoute(codyId))
+                    },
+                    onNavigateToEdit = { codyId ->
+                        navController.navigate(Routes.CodyEdit.createRoute(codyId))
                     }
                 )
             }

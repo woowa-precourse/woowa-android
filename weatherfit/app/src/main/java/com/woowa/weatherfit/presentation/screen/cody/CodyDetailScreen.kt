@@ -19,7 +19,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material3.Card
@@ -36,6 +37,8 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -62,9 +65,14 @@ import com.woowa.weatherfit.ui.theme.Primary
 fun CodyDetailScreen(
     viewModel: CodyDetailViewModel = hiltViewModel(),
     onNavigateBack: () -> Unit,
-    onNavigateToCodyDetail: (Long) -> Unit = {}
+    onNavigateToCodyDetail: (Long) -> Unit = {},
+    onNavigateToEdit: (Long) -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        viewModel.refreshCodyDetail()
+    }
 
     Scaffold(
         topBar = {
@@ -95,9 +103,12 @@ fun CodyDetailScreen(
                                 tint = Primary
                             )
                         }
+                        IconButton(onClick = { onNavigateToEdit(cody.id) }) {
+                            Icon(Icons.Default.Edit, "Edit", tint = Primary)
+                        }
                     }
                     IconButton(onClick = { viewModel.deleteCody(onNavigateBack) }) {
-                        Icon(Icons.Default.MoreVert, "Delete")
+                        Icon(Icons.Default.Delete, "Delete", tint = Color.Red)
                     }
                 }
             )
@@ -112,8 +123,30 @@ fun CodyDetailScreen(
             ) {
                 CircularProgressIndicator()
             }
+        } else if (uiState.error != null) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = uiState.error!!,
+                    color = Color.Red
+                )
+            }
         } else {
-            val codyWithClothes = uiState.codyWithClothes ?: return@Scaffold
+            val codyWithClothes = uiState.codyWithClothes ?: run {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("코디 데이터가 없습니다", color = Color.Gray)
+                }
+                return@Scaffold
+            }
 
             Column(
                 modifier = Modifier
@@ -125,81 +158,18 @@ fun CodyDetailScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f)
-                        .padding(16.dp)
+                        .padding(8.dp),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Card(
+                    // Display outfit thumbnail
+                    AsyncImage(
+                        model = codyWithClothes.cody.thumbnail,
+                        contentDescription = "Outfit thumbnail",
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(horizontal = 32.dp),
-                        shape = CardShape,
-                        colors = CardDefaults.cardColors(containerColor = Color.White),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(16.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxSize(),
-                                horizontalArrangement = Arrangement.SpaceEvenly,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                // 왼쪽 열
-                                Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                                ) {
-                                    codyWithClothes.clothes.filterIndexed { index, _ -> index % 2 == 0 }.forEach { cloth ->
-                                        AsyncImage(
-                                            model = cloth.imageUrl,
-                                            contentDescription = null,
-                                            modifier = Modifier
-                                                .size(100.dp)
-                                                .clip(RoundedCornerShape(8.dp)),
-                                            contentScale = ContentScale.Crop
-                                        )
-                                    }
-                                }
-                                // 오른쪽 열
-                                Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                                ) {
-                                    codyWithClothes.clothes.filterIndexed { index, _ -> index % 2 == 1 }.forEach { cloth ->
-                                        AsyncImage(
-                                            model = cloth.imageUrl,
-                                            contentDescription = null,
-                                            modifier = Modifier
-                                                .size(100.dp)
-                                                .clip(RoundedCornerShape(8.dp)),
-                                            contentScale = ContentScale.Crop
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    Row(
-                        modifier = Modifier.fillMaxSize(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        IconButton(
-                            onClick = { /* TODO: Implement previous cody navigation */ },
-                            enabled = false
-                        ) {
-                            Icon(Icons.Default.ChevronLeft, "Previous", tint = Color.Gray, modifier = Modifier.size(48.dp))
-                        }
-                        IconButton(
-                            onClick = { /* TODO: Implement next cody navigation */ },
-                            enabled = false
-                        ) {
-                            Icon(Icons.Default.ChevronRight, "Next", tint = Color.Gray, modifier = Modifier.size(48.dp))
-                        }
-                    }
+                            .clip(RoundedCornerShape(8.dp)),
+                        contentScale = ContentScale.Fit
+                    )
                 }
 
                 // Clothes Items List

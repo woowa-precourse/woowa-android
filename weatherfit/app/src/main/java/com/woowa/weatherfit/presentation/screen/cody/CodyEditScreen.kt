@@ -5,6 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -38,9 +39,12 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
@@ -64,6 +68,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import kotlin.math.abs
 import kotlin.math.roundToInt
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -71,9 +76,11 @@ import coil.compose.AsyncImage
 import android.content.Context
 import android.graphics.Bitmap
 import android.view.View
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.ComposeView
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -110,19 +117,34 @@ fun CodyEditScreen(
     }
 
     Scaffold(topBar = { TopAppBar(title = { Text("코디 조합") }) }) { paddingValues ->
-        Column(
+        var selectedClothId by remember { mutableStateOf<Long?>(null) }
+        var showControls by remember { mutableStateOf(true) }
+
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Draggable Canvas for Outfit Composition
-            var selectedClothId by remember { mutableStateOf<Long?>(null) }
+            Column(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                // Draggable Canvas for Outfit Composition
 
             DraggableOutfitCanvas(
                 selectedClothes = uiState.selectedClothes,
                 clothItemsWithPosition = uiState.clothItemsWithPosition,
                 selectedClothId = selectedClothId,
-                onSelectCloth = { clothId -> selectedClothId = clothId },
+                showControls = showControls,
+                onSelectCloth = { clothId ->
+                    if (selectedClothId == clothId) {
+                        // 이미 선택된 옷을 다시 클릭 -> 선택 취소
+                        selectedClothId = null
+                    } else {
+                        // 새로운 옷 선택
+                        selectedClothId = clothId
+                        viewModel.selectCloth(clothId)
+                    }
+                },
                 onUpdatePosition = { clothId, x, y, scale ->
                     viewModel.updateClothPosition(clothId, x, y, scale)
                 },
@@ -166,8 +188,16 @@ fun CodyEditScreen(
                     onClick = {
                         scope.launch {
                             canvasView?.let { view ->
+                                // Hide controls before capture
+                                showControls = false
+                                delay(100) // Wait for recomposition
+
                                 val bitmap = captureViewToBitmap(view)
                                 val file = saveBitmapToFile(context, bitmap)
+
+                                // Restore controls
+                                showControls = true
+
                                 viewModel.setThumbnail(file)
                                 viewModel.saveCody()
                             }
@@ -268,6 +298,65 @@ fun CodyEditScreen(
                 }
             }
         }
+
+            // Floating Scale Control (show only when a cloth is selected)
+            selectedClothId?.let { clothId ->
+                uiState.clothItemsWithPosition[clothId]?.let { clothItem ->
+                    Surface(
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(bottom = 100.dp, end = 16.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        color = Color.White,
+                        shadowElevation = 8.dp
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(16.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "크기",
+                                color = Color.Gray
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = String.format("%.1fx", clothItem.scale),
+                                color = Primary
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                IconButton(
+                                    onClick = {
+                                        val newScale = (clothItem.scale - 0.1).coerceIn(0.5, 2.0)
+                                        viewModel.updateClothPosition(
+                                            clothId,
+                                            clothItem.xCoord,
+                                            clothItem.yCoord,
+                                            newScale
+                                        )
+                                    }
+                                ) {
+                                    Icon(Icons.Default.Remove, "축소")
+                                }
+                                IconButton(
+                                    onClick = {
+                                        val newScale = (clothItem.scale + 0.1).coerceIn(0.5, 2.0)
+                                        viewModel.updateClothPosition(
+                                            clothId,
+                                            clothItem.xCoord,
+                                            clothItem.yCoord,
+                                            newScale
+                                        )
+                                    }
+                                ) {
+                                    Icon(Icons.Default.Add, "확대")
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -276,6 +365,7 @@ fun DraggableOutfitCanvas(
     selectedClothes: List<Cloth>,
     clothItemsWithPosition: Map<Long, com.woowa.weatherfit.domain.model.CodyClothItem>,
     selectedClothId: Long?,
+    showControls: Boolean = true,
     onSelectCloth: (Long) -> Unit,
     onUpdatePosition: (Long, Double, Double, Double) -> Unit,
     onUpdateZIndex: (Long, Int) -> Unit,
@@ -298,6 +388,7 @@ fun DraggableOutfitCanvas(
                     clothItemsWithPosition = clothItemsWithPosition,
                     selectedClothId = selectedClothId,
                     canvasSize = canvasSize,
+                    showControls = showControls,
                     onSelectCloth = onSelectCloth,
                     onUpdatePosition = onUpdatePosition,
                     onUpdateZIndex = onUpdateZIndex,
@@ -316,6 +407,7 @@ private fun CanvasContent(
     clothItemsWithPosition: Map<Long, com.woowa.weatherfit.domain.model.CodyClothItem>,
     selectedClothId: Long?,
     canvasSize: IntOffset,
+    showControls: Boolean,
     onSelectCloth: (Long) -> Unit,
     onUpdatePosition: (Long, Double, Double, Double) -> Unit,
     onUpdateZIndex: (Long, Int) -> Unit,
@@ -352,9 +444,10 @@ private fun CanvasContent(
                                 position = item,
                                 isSelected = cloth.id == selectedClothId,
                                 canvasSize = canvasSize,
+                                showControls = showControls,
                                 onSelect = { onSelectCloth(cloth.id) },
-                                onUpdatePosition = { newX, newY ->
-                                    onUpdatePosition(cloth.id, newX, newY, item.scale)
+                                onUpdatePosition = { newX, newY, newScale ->
+                                    onUpdatePosition(cloth.id, newX, newY, newScale)
                                 },
                                 onUpdateScale = { newScale ->
                                     onUpdatePosition(cloth.id, item.xCoord, item.yCoord, newScale)
@@ -377,8 +470,9 @@ fun DraggableClothItem(
     position: com.woowa.weatherfit.domain.model.CodyClothItem,
     isSelected: Boolean,
     canvasSize: IntOffset,
+    showControls: Boolean,
     onSelect: () -> Unit,
-    onUpdatePosition: (Double, Double) -> Unit,
+    onUpdatePosition: (Double, Double, Double) -> Unit,
     onUpdateScale: (Double) -> Unit,
     onUpdateZIndex: (Int) -> Unit,
     onRemove: () -> Unit
@@ -390,7 +484,15 @@ fun DraggableClothItem(
         mutableStateOf((position.yCoord * canvasSize.y.coerceAtLeast(1)).toFloat())
     }
 
-    val clothSize = (80 * position.scale).dp
+    var currentScale by remember {
+        mutableStateOf(position.scale)
+    }
+
+    LaunchedEffect(position.scale) {
+        currentScale = position.scale
+    }
+
+    val clothSize = (80 * currentScale).dp
 
     Box(
         modifier = Modifier
@@ -422,88 +524,25 @@ fun DraggableClothItem(
 
                         val normalizedX = (offsetX / canvasSize.x).toDouble().coerceIn(0.0, 1.0)
                         val normalizedY = (offsetY / canvasSize.y).toDouble().coerceIn(0.0, 1.0)
-                        onUpdatePosition(normalizedX, normalizedY)
+                        onUpdatePosition(normalizedX, normalizedY, currentScale)
                     }
                 },
             contentScale = ContentScale.Crop
         )
 
         // Controls when selected
-        if (isSelected) {
-            Column(
+        if (isSelected && showControls) {
+            // Remove button with dynamic offset based on cloth size
+            val buttonOffset = (clothSize.value / 2 + 25).dp
+            IconButton(
+                onClick = onRemove,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .offset(y = 60.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+                    .offset(y = buttonOffset)
+                    .size(40.dp)
+                    .background(Color.White, CircleShape)
             ) {
-                // Layer controls
-                Row(
-                    modifier = Modifier
-                        .background(Color.White, RoundedCornerShape(20.dp))
-                        .padding(4.dp),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    // Move backward
-                    IconButton(
-                        onClick = {
-                            val newZIndex = position.zIndex - 1
-                            onUpdateZIndex(newZIndex)
-                        },
-                        modifier = Modifier.size(32.dp)
-                    ) {
-                        Icon(Icons.Default.KeyboardArrowDown, "뒤로 보내기", tint = Primary)
-                    }
-
-                    // Move forward
-                    IconButton(
-                        onClick = {
-                            val newZIndex = position.zIndex + 1
-                            onUpdateZIndex(newZIndex)
-                        },
-                        modifier = Modifier.size(32.dp)
-                    ) {
-                        Icon(Icons.Default.KeyboardArrowUp, "앞으로 가져오기", tint = Primary)
-                    }
-                }
-
-                // Scale controls
-                Row(
-                    modifier = Modifier
-                        .background(Color.White, RoundedCornerShape(20.dp))
-                        .padding(4.dp),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    // Decrease size
-                    IconButton(
-                        onClick = {
-                            val newScale = (position.scale - 0.2).coerceAtLeast(0.5)
-                            onUpdateScale(newScale)
-                        },
-                        modifier = Modifier.size(32.dp)
-                    ) {
-                        Icon(Icons.Default.Remove, "크기 줄이기", tint = Primary)
-                    }
-
-                    // Remove cloth
-                    IconButton(
-                        onClick = onRemove,
-                        modifier = Modifier.size(32.dp)
-                    ) {
-                        Icon(Icons.Default.Close, "삭제", tint = Color.Red)
-                    }
-
-                    // Increase size
-                    IconButton(
-                        onClick = {
-                            val newScale = (position.scale + 0.2).coerceAtMost(2.0)
-                            onUpdateScale(newScale)
-                        },
-                        modifier = Modifier.size(32.dp)
-                    ) {
-                        Icon(Icons.Default.Add, "크기 키우기", tint = Primary)
-                    }
-                }
+                Icon(Icons.Default.Close, "삭제", tint = Color.Red)
             }
         }
     }

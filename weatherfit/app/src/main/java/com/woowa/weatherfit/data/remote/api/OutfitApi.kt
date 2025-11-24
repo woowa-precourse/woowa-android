@@ -3,6 +3,7 @@ package com.woowa.weatherfit.data.remote.api
 import com.woowa.weatherfit.data.remote.dto.OutfitDetailResponse
 import com.woowa.weatherfit.data.remote.dto.OutfitResponse
 import com.woowa.weatherfit.data.remote.dto.OutfitsListResponse
+import com.woowa.weatherfit.data.remote.dto.ToggleFixedResponse
 import com.woowa.weatherfit.data.remote.dto.UpdateOutfitRequest
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
@@ -34,10 +35,13 @@ interface OutfitApi {
         @Path("id") id: Long
     ): OutfitDetailResponse
 
+    @Multipart
     @PUT("outfits/{id}")
     suspend fun updateOutfit(
         @Path("id") id: Long,
-        @Body request: UpdateOutfitRequest
+        @Part thumbnail: MultipartBody.Part,
+        @Part("clothes") clothes: RequestBody,
+        @Part("category") category: RequestBody
     ): OutfitResponse
 
     @DELETE("outfits/{id}")
@@ -48,5 +52,5 @@ interface OutfitApi {
     @PATCH("outfits/{id}/fixed")
     suspend fun toggleFixed(
         @Path("id") id: Long
-    ): OutfitResponse
+    ): ToggleFixedResponse
 }
