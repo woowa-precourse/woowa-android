@@ -20,9 +20,16 @@ data class HomeUiState(
     val temperature: Double? = null,
     val weatherCondition: String? = null,
     val currentSeason: Season = Season.SPRING,
+    val hourlyWeather: List<HourlyWeatherItem> = emptyList(),
     val recommendedOutfits: List<OutfitRecommendation> = emptyList(),
     val error: String? = null,
     val debugGpsInfo: String? = null  // 디버그용 GPS 정보
+)
+
+data class HourlyWeatherItem(
+    val temperature: Double,
+    val weather: String,
+    val timestamp: String
 )
 
 data class OutfitRecommendation(

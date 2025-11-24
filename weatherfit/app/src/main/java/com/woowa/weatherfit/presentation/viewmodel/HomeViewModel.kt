@@ -11,6 +11,7 @@ import com.woowa.weatherfit.domain.usecase.location.GetCurrentLocationUseCase
 import com.woowa.weatherfit.domain.usecase.region.GetSelectedRegionUseCase
 import com.woowa.weatherfit.domain.usecase.today.GetTodayRecommendationUseCase
 import com.woowa.weatherfit.presentation.state.HomeUiState
+import com.woowa.weatherfit.presentation.state.HourlyWeatherItem
 import com.woowa.weatherfit.presentation.state.OutfitRecommendation
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -33,12 +34,9 @@ class HomeViewModel @Inject constructor(
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
     private var currentRegion: Region? = null
+    private var isObservingRegion = false
 
-    init {
-        observeRegion()
-    }
-
-    fun updateLocationToCurrentPosition() {
+    fun updateLocationToCurrentPosition(onComplete: () -> Unit) {
         Log.d(TAG, "updateLocationToCurrentPosition() called")
         viewModelScope.launch {
             getCurrentLocationUseCase()
@@ -59,11 +57,22 @@ class HomeViewModel @Inject constructor(
 
                     regionRepository.setSelectedRegion(nearestRegion)
                     Log.d(TAG, "Selected region updated to: ${nearestRegion.name}")
+
+                    onComplete()
                 }
                 .onFailure { error ->
                     Log.e(TAG, "Failed to get current location: ${error.message}", error)
                     _uiState.update { it.copy(debugGpsInfo = "GPS 실패: ${error.message}") }
+
+                    onComplete()
                 }
+        }
+    }
+
+    fun startObservingRegion() {
+        if (!isObservingRegion) {
+            isObservingRegion = true
+            observeRegion()
         }
     }
 
@@ -90,8 +99,17 @@ class HomeViewModel @Inject constructor(
                 locationName = region.name
             ).onSuccess { todayResponse ->
                 // 온도로부터 계절 계산
-                val temperatureRange = TemperatureRange.fromTemperature(todayResponse.temperature.toInt())
+                val temperatureRange = TemperatureRange.fromTemperature(todayResponse.current.temperature.toInt())
                 val season = Season.fromTemperatureRange(temperatureRange)
+
+                // Hourly 날씨 데이터 변환
+                val hourlyWeather = todayResponse.hourly.map { hourly ->
+                    HourlyWeatherItem(
+                        temperature = hourly.temperature,
+                        weather = hourly.weather,
+                        timestamp = hourly.timestamp
+                    )
+                }
 
                 // Outfit 리스트 변환
                 val outfits = todayResponse.outfits.map { outfit ->
@@ -104,9 +122,10 @@ class HomeViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         regionName = todayResponse.region,
-                        temperature = todayResponse.temperature,
-                        weatherCondition = todayResponse.weather,
+                        temperature = todayResponse.current.temperature,
+                        weatherCondition = todayResponse.current.weather,
                         currentSeason = season,
+                        hourlyWeather = hourlyWeather,
                         recommendedOutfits = outfits,
                         isLoading = false
                     )

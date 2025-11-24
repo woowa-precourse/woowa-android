@@ -69,8 +69,8 @@ fun HomeScreen(
         )
     )
 
-    // GPS 위치를 한 번만 가져왔는지 체크 (앱 재시작하면 리셋됨)
-    val hasLocationBeenFetched = rememberSaveable { mutableStateOf(false) }
+    // 한 번만 실행되도록 플래그 관리
+    val hasInitialized = rememberSaveable { mutableStateOf(false) }
 
     // 화면이 처음 표시될 때 권한 요청
     LaunchedEffect(Unit) {
@@ -79,11 +79,13 @@ fun HomeScreen(
         }
     }
 
-    // 권한이 승인되면 현재 위치로 업데이트 (한 번만)
+    // 권한이 승인되면 GPS 위치 가져오기 후 데이터 로드 시작 (한 번만)
     LaunchedEffect(locationPermissionsState.allPermissionsGranted) {
-        if (locationPermissionsState.allPermissionsGranted && !hasLocationBeenFetched.value) {
-            viewModel.updateLocationToCurrentPosition()
-            hasLocationBeenFetched.value = true
+        if (locationPermissionsState.allPermissionsGranted && !hasInitialized.value) {
+            hasInitialized.value = true
+            viewModel.updateLocationToCurrentPosition {
+                viewModel.startObservingRegion()
+            }
         }
     }
 
@@ -92,35 +94,44 @@ fun HomeScreen(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
-            CircularProgressIndicator()
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                CircularProgressIndicator()
+                Text(
+                    text = "위치를 불러오는 중입니다.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                )
+            }
         }
         return
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
+    Box(
+        modifier = Modifier.fillMaxSize()
     ) {
-        // Weather Section
+        // Weather Section (전체 화면 배경)
         WeatherSection(
             location = uiState.regionName ?: "위치 선택",
             temperature = uiState.temperature?.toInt() ?: 0,
             weatherCondition = uiState.weatherCondition ?: "",
             season = uiState.currentSeason.displayName,
+            hourlyWeather = uiState.hourlyWeather,
             debugGpsInfo = uiState.debugGpsInfo,
             onMenuClick = onNavigateToRegionSelect,
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.fillMaxSize()
         )
 
-        Spacer(modifier = Modifier.height(10.dp))
-
-        // Recommended Cody Section
+        // Recommended Cody Section (하단에 겹쳐서 배치)
         RecommendedOutfitSection(
             outfits = uiState.recommendedOutfits,
-            onOutfitClick = onNavigateToCodyDetail
+            onOutfitClick = onNavigateToCodyDetail,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 16.dp)
         )
-
-        Spacer(modifier = Modifier.height(10.dp))
     }
 }
 
@@ -130,6 +141,7 @@ private fun WeatherSection(
     temperature: Int,
     weatherCondition: String,
     season: String,
+    hourlyWeather: List<com.woowa.weatherfit.presentation.state.HourlyWeatherItem>,
     debugGpsInfo: String?,
     onMenuClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -208,16 +220,94 @@ private fun WeatherSection(
                     )
 
                     // 디버그 GPS 정보 표시
-                    if (debugGpsInfo != null) {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "🔍 디버그: $debugGpsInfo",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color.Red
-                        )
-                    }
+//                    if (debugGpsInfo != null) {
+//                        Spacer(modifier = Modifier.height(8.dp))
+//                        Text(
+//                            text = "🔍 디버그: $debugGpsInfo",
+//                            style = MaterialTheme.typography.bodySmall,
+//                            color = Color.Red
+//                        )
+//                    }
                 }
             }
+
+            // 시간별 날씨 정보
+            if (hourlyWeather.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(16.dp))
+                HourlyWeatherSection(hourlyWeather = hourlyWeather)
+            }
+        }
+    }
+}
+
+@Composable
+private fun HourlyWeatherSection(
+    hourlyWeather: List<com.woowa.weatherfit.presentation.state.HourlyWeatherItem>,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier.fillMaxWidth()) {
+        Text(
+            text = "시간별 날씨",
+            color = Color.White,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            items(hourlyWeather) { hourly ->
+                HourlyWeatherItem(hourly = hourly)
+            }
+        }
+    }
+}
+
+@Composable
+private fun HourlyWeatherItem(
+    hourly: com.woowa.weatherfit.presentation.state.HourlyWeatherItem,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.width(80.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.9f)),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .padding(12.dp)
+                .fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // 시간 표시 (timestamp에서 시간만 추출)
+            val time = hourly.timestamp.substringAfter("T").substringBefore(":")
+            Text(
+                text = "${time}시",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium,
+                color = Color.Black
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // 온도 표시
+            Text(
+                text = "${hourly.temperature.toInt()}°",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.Black
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            // 날씨 상태 표시
+            Text(
+                text = hourly.weather,
+                fontSize = 10.sp,
+                color = Color.Gray,
+                maxLines = 1
+            )
         }
     }
 }
@@ -225,9 +315,11 @@ private fun WeatherSection(
 @Composable
 private fun RecommendedOutfitSection(
     outfits: List<com.woowa.weatherfit.presentation.state.OutfitRecommendation>,
-    onOutfitClick: (Long) -> Unit
+    onOutfitClick: (Long) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     LazyRow(
+        modifier = modifier,
         contentPadding = PaddingValues(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {

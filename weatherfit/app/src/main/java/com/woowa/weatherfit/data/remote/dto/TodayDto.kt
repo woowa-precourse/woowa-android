@@ -8,14 +8,38 @@ data class TodayResponse(
     @SerialName("region")
     val region: String,
 
+    @SerialName("current")
+    val current: CurrentWeather,
+
+    @SerialName("hourly")
+    val hourly: List<HourlyWeather>,
+
+    @SerialName("outfits")
+    val outfits: List<OutfitRecommendationResponse>
+)
+
+@Serializable
+data class CurrentWeather(
     @SerialName("temperature")
     val temperature: Double,
 
     @SerialName("weather")
     val weather: String,
 
-    @SerialName("outfits")
-    val outfits: List<OutfitRecommendationResponse>
+    @SerialName("timestamp")
+    val timestamp: String
+)
+
+@Serializable
+data class HourlyWeather(
+    @SerialName("temperature")
+    val temperature: Double,
+
+    @SerialName("weather")
+    val weather: String,
+
+    @SerialName("timestamp")
+    val timestamp: String
 )
 
 @Serializable
