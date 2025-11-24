@@ -1,6 +1,8 @@
 package com.woowa.weatherfit.presentation.screen.home
 
 import android.Manifest
+import androidx.annotation.DrawableRes
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -39,6 +41,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -47,6 +50,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
+import com.woowa.weatherfit.R
 import com.woowa.weatherfit.presentation.viewmodel.HomeViewModel
 import com.woowa.weatherfit.ui.theme.CardShape
 import com.woowa.weatherfit.ui.theme.WeatherGradientEnd
@@ -202,40 +206,27 @@ private fun WeatherSection(
                 fontWeight = FontWeight.Light
             )
 
-            Text(text = weatherCondition, color = Color.White, fontSize = 16.sp)
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Weather Icon
+            Image(
+                painter = painterResource(id = getWeatherIcon(weatherCondition)),
+                contentDescription = weatherCondition,
+                modifier = Modifier.size(64.dp)
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
             Text(text = "계절: $season", color = Color.White, fontSize = 14.sp)
 
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Weather Info Card
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.9f)),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = "오늘의 날씨에 맞는 코디를 추천해드립니다.",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-
-                    // 디버그 GPS 정보 표시
-//                    if (debugGpsInfo != null) {
-//                        Spacer(modifier = Modifier.height(8.dp))
-//                        Text(
-//                            text = "🔍 디버그: $debugGpsInfo",
-//                            style = MaterialTheme.typography.bodySmall,
-//                            color = Color.Red
-//                        )
-//                    }
-                }
-            }
 
             // 시간별 날씨 정보
             if (hourlyWeather.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(16.dp))
                 HourlyWeatherSection(hourlyWeather = hourlyWeather)
             }
+
+            Spacer(modifier = Modifier.height(24.dp))
+            
         }
     }
 }
@@ -291,22 +282,21 @@ private fun HourlyWeatherItem(
 
             Spacer(modifier = Modifier.height(8.dp))
 
+            // 날씨 아이콘 표시
+            Image(
+                painter = painterResource(id = getWeatherIcon(hourly.weather)),
+                contentDescription = hourly.weather,
+                modifier = Modifier.size(32.dp)
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
             // 온도 표시
             Text(
                 text = "${hourly.temperature.toInt()}°",
-                fontSize = 18.sp,
+                fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.Black
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            // 날씨 상태 표시
-            Text(
-                text = hourly.weather,
-                fontSize = 10.sp,
-                color = Color.Gray,
-                maxLines = 1
             )
         }
     }
@@ -318,19 +308,44 @@ private fun RecommendedOutfitSection(
     onOutfitClick: (Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    LazyRow(
-        modifier = modifier,
-        contentPadding = PaddingValues(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        items(outfits) { outfit ->
-            OutfitThumbnailCard(
-                outfit = outfit,
-                onClick = { onOutfitClick(outfit.id) },
-                modifier = Modifier
-                    .width(150.dp)
-                    .height(200.dp)
-            )
+    if (outfits.isEmpty()) {
+        // 추천 코디가 없을 때 메시지 표시
+        Box(
+            modifier = modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.9f)),
+                shape = RoundedCornerShape(12.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            ) {
+                Text(
+                    text = "추천 코디가 없습니다",
+                    modifier = Modifier.padding(24.dp),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = Color.Gray,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+        }
+    } else {
+        LazyRow(
+            modifier = modifier,
+            contentPadding = PaddingValues(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            items(outfits) { outfit ->
+                OutfitThumbnailCard(
+                    outfit = outfit,
+                    onClick = { onOutfitClick(outfit.id) },
+                    modifier = Modifier
+                        .width(150.dp)
+                        .height(200.dp)
+                )
+            }
         }
     }
 }
@@ -352,5 +367,20 @@ private fun OutfitThumbnailCard(
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop
         )
+    }
+}
+
+// 날씨 조건을 Drawable 리소스로 매핑하는 함수
+@DrawableRes
+private fun getWeatherIcon(weather: String): Int {
+    return when (weather.lowercase()) {
+        "thunderstorm" -> R.drawable.thunderstorm
+        "drizzle" -> R.drawable.rain
+        "rain" -> R.drawable.rain
+        "snow" -> R.drawable.snow
+        "atmosphere" -> R.drawable.atmosphere
+        "clear" -> R.drawable.clear
+        "clouds" -> R.drawable.clouds
+        else -> R.drawable.clear // 기본값
     }
 }
