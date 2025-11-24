@@ -1,5 +1,6 @@
 package com.woowa.weatherfit.presentation.viewmodel
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.woowa.weatherfit.domain.model.Cloth
@@ -9,6 +10,8 @@ import com.woowa.weatherfit.domain.model.Season
 import com.woowa.weatherfit.domain.model.SubCategory
 import com.woowa.weatherfit.domain.usecase.cloth.GetAllClothesUseCase
 import com.woowa.weatherfit.domain.usecase.cody.AddCodyUseCase
+import com.woowa.weatherfit.domain.usecase.cody.GetCodyDetailUseCase
+import com.woowa.weatherfit.domain.usecase.cody.UpdateCodyUseCase
 import com.woowa.weatherfit.presentation.state.CodyEditUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,14 +26,23 @@ import javax.inject.Inject
 @HiltViewModel
 class CodyEditViewModel @Inject constructor(
     private val getAllClothesUseCase: GetAllClothesUseCase,
-    private val addCodyUseCase: AddCodyUseCase
+    private val addCodyUseCase: AddCodyUseCase,
+    private val getCodyDetailUseCase: GetCodyDetailUseCase,
+    private val updateCodyUseCase: UpdateCodyUseCase,
+    savedStateHandle: SavedStateHandle
 ) : ViewModel() {
+
+    private val codyId: Long? = savedStateHandle.get<Long>("codyId")?.takeIf { it != -1L }
+    private val isEditMode: Boolean = codyId != null
 
     private val _uiState = MutableStateFlow(CodyEditUiState())
     val uiState: StateFlow<CodyEditUiState> = _uiState.asStateFlow()
 
     init {
         loadClothes()
+        if (isEditMode && codyId != null) {
+            loadExistingCody(codyId)
+        }
     }
 
     private fun loadClothes() {
@@ -47,6 +59,46 @@ class CodyEditViewModel @Inject constructor(
             }.onFailure {
                 _uiState.update { it.copy(isLoading = false) }
             }
+        }
+    }
+
+    private fun loadExistingCody(id: Long) {
+        viewModelScope.launch {
+            getCodyDetailUseCase(id).onSuccess { cody ->
+                // Wait for clothes to be loaded first
+                val allClothes = _uiState.value.allClothes
+                if (allClothes.isNotEmpty()) {
+                    populateExistingCody(cody)
+                } else {
+                    // Retry after a short delay if clothes not loaded yet
+                    kotlinx.coroutines.delay(100)
+                    populateExistingCody(cody)
+                }
+            }
+        }
+    }
+
+    private fun populateExistingCody(cody: com.woowa.weatherfit.domain.model.Cody) {
+        val allClothes = _uiState.value.allClothes
+
+        // Match cloth items with full Cloth objects
+        val selectedClothes = mutableListOf<Cloth>()
+        val clothItemsWithPosition = mutableMapOf<Long, CodyClothItem>()
+
+        cody.clothItems.forEach { item ->
+            val cloth = allClothes.find { it.id == item.id }
+            if (cloth != null) {
+                selectedClothes.add(cloth)
+                clothItemsWithPosition[item.id] = item
+            }
+        }
+
+        _uiState.update { state ->
+            state.copy(
+                selectedSeason = cody.category,
+                selectedClothes = selectedClothes,
+                clothItemsWithPosition = clothItemsWithPosition
+            )
         }
     }
 
@@ -147,6 +199,21 @@ class CodyEditViewModel @Inject constructor(
         }
     }
 
+    fun selectCloth(clothId: Long) {
+        _uiState.update { state ->
+            val currentPosition = state.clothItemsWithPosition[clothId]
+            if (currentPosition != null) {
+                // Get max zIndex and set this cloth to max + 1
+                val maxZIndex = state.clothItemsWithPosition.values.maxOfOrNull { it.zIndex } ?: 0
+                val updatedPositions = state.clothItemsWithPosition.toMutableMap()
+                updatedPositions[clothId] = currentPosition.copy(zIndex = maxZIndex + 1)
+                state.copy(clothItemsWithPosition = updatedPositions)
+            } else {
+                state
+            }
+        }
+    }
+
     fun setThumbnail(file: File) {
         _uiState.update { it.copy(thumbnailFile = file) }
     }
@@ -159,6 +226,7 @@ class CodyEditViewModel @Inject constructor(
             return
         }
 
+        // Require thumbnail for both create and edit mode
         if (state.thumbnailFile == null) {
             _uiState.update { it.copy(error = "썸네일을 설정해주세요") }
             return
@@ -170,11 +238,22 @@ class CodyEditViewModel @Inject constructor(
             try {
                 val clothItems = state.clothItemsWithPosition.values.toList()
 
-                val result = addCodyUseCase(
-                    thumbnail = state.thumbnailFile,
-                    clothItems = clothItems,
-                    category = state.selectedSeason
-                )
+                val result = if (isEditMode && codyId != null) {
+                    // Update existing cody
+                    updateCodyUseCase(
+                        id = codyId,
+                        clothItems = clothItems,
+                        category = state.selectedSeason,
+                        thumbnail = state.thumbnailFile!!
+                    )
+                } else {
+                    // Create new cody
+                    addCodyUseCase(
+                        thumbnail = state.thumbnailFile!!,
+                        clothItems = clothItems,
+                        category = state.selectedSeason
+                    )
+                }
 
                 result.onSuccess {
                     _uiState.update { it.copy(isSaving = false, saveSuccess = true) }

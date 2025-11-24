@@ -19,11 +19,12 @@ interface CodyRepository {
 
     suspend fun updateOutfitRemote(
         id: Long,
+        thumbnail: File,
         clothItems: List<CodyClothItem>,
         category: Season
     ): Cody
 
     suspend fun deleteOutfitRemote(id: Long)
 
-    suspend fun toggleFixed(id: Long)
+    suspend fun toggleFixed(id: Long): Boolean
 }
