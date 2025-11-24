@@ -178,17 +178,6 @@ private fun WeatherSection(
                 }
             }
 
-            // Location
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Default.LocationOn,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(16.dp)
-                )
-                Text(text = "집", color = Color.White, fontSize = 12.sp)
-            }
-
             Text(
                 text = location,
                 color = Color.White,

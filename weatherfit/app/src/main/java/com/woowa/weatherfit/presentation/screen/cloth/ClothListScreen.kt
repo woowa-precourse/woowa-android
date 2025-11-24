@@ -169,7 +169,10 @@ private fun MainCategoryTabs(
                 text = {
                     Text(
                         text = category.displayName,
-                        color = if (category == selectedCategory) Primary else Color.Black
+                        color = if (category == selectedCategory) Primary else Color.Black,
+                        fontSize = 14.sp,
+                        maxLines = 1,
+                        softWrap = false
                     )
                 }
             )
