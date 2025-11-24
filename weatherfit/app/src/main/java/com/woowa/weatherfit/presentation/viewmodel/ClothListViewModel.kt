@@ -77,9 +77,21 @@ class ClothListViewModel @Inject constructor(
 
     fun deleteCloth(clothId: Long) {
         viewModelScope.launch {
-            deleteClothUseCase(clothId).onFailure { e ->
-                // TODO: 에러 처리 (Toast 또는 Snackbar 표시)
-            }
+            deleteClothUseCase(clothId)
+                .onSuccess {
+                    // 삭제 성공 시 로컬 상태에서 즉시 제거 (깜빡임 방지)
+                    _uiState.update { state ->
+                        val updatedClothes = state.clothes.filter { it.id != clothId }
+                        val updatedFiltered = state.filteredClothes.filter { it.id != clothId }
+                        state.copy(
+                            clothes = updatedClothes,
+                            filteredClothes = updatedFiltered
+                        )
+                    }
+                }
+                .onFailure { e ->
+                    // TODO: 에러 처리 (Toast 또는 Snackbar 표시)
+                }
         }
     }
 }
