@@ -3,6 +3,7 @@ package com.woowa.weatherfit.data.repository
 import com.woowa.weatherfit.data.remote.api.OutfitApi
 import com.woowa.weatherfit.data.remote.dto.UpdateOutfitRequest
 import com.woowa.weatherfit.data.remote.dto.toCody
+import com.woowa.weatherfit.data.remote.dto.toCodyClothItem
 import com.woowa.weatherfit.data.remote.dto.toClothesRequest
 import com.woowa.weatherfit.domain.model.Cody
 import com.woowa.weatherfit.domain.model.CodyClothItem
@@ -36,7 +37,7 @@ class CodyRepositoryImpl @Inject constructor(
         val clothesJson = Json.encodeToString(clothItems.map { it.toClothesRequest() })
         val clothesPart = clothesJson.toRequestBody("application/json".toMediaTypeOrNull())
 
-        val categoryPart = category.name.toRequestBody("text/plain".toMediaTypeOrNull())
+        val categoryPart = category.name.uppercase().toRequestBody("text/plain".toMediaTypeOrNull())
 
         val response = outfitApi.createOutfit(thumbnailPart, clothesPart, categoryPart)
         return response.toCody()
@@ -54,7 +55,7 @@ class CodyRepositoryImpl @Inject constructor(
         return Cody(
             id = response.id,
             thumbnail = response.thumbnail,
-            clothItems = emptyList(),
+            clothItems = response.clothes.map { it.toCodyClothItem() },
             category = Season.valueOf(response.category.uppercase()),
             isFixed = false
         )
@@ -62,15 +63,22 @@ class CodyRepositoryImpl @Inject constructor(
 
     override suspend fun updateOutfitRemote(
         id: Long,
+        thumbnail: File,
         clothItems: List<CodyClothItem>,
         category: Season
     ): Cody {
-        val request = UpdateOutfitRequest(
-            clothes = clothItems.map { it.toClothesRequest() },
-            category = category.name.uppercase()
+        val thumbnailPart = MultipartBody.Part.createFormData(
+            "thumbnail",
+            thumbnail.name,
+            thumbnail.asRequestBody("image/*".toMediaTypeOrNull())
         )
 
-        val response = outfitApi.updateOutfit(id, request)
+        val clothesJson = Json.encodeToString(clothItems.map { it.toClothesRequest() })
+        val clothesPart = clothesJson.toRequestBody("application/json".toMediaTypeOrNull())
+
+        val categoryPart = category.name.uppercase().toRequestBody("text/plain".toMediaTypeOrNull())
+
+        val response = outfitApi.updateOutfit(id, thumbnailPart, clothesPart, categoryPart)
         return response.toCody()
     }
 
@@ -78,7 +86,8 @@ class CodyRepositoryImpl @Inject constructor(
         outfitApi.deleteOutfit(id)
     }
 
-    override suspend fun toggleFixed(id: Long) {
-        outfitApi.toggleFixed(id)
+    override suspend fun toggleFixed(id: Long): Boolean {
+        val response = outfitApi.toggleFixed(id)
+        return response.fixed
     }
 }

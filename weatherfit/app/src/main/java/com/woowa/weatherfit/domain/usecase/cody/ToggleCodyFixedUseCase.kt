@@ -6,10 +6,10 @@ import javax.inject.Inject
 class ToggleCodyFixedUseCase @Inject constructor(
     private val codyRepository: CodyRepository
 ) {
-    suspend operator fun invoke(id: Long): Result<Unit> {
+    suspend operator fun invoke(id: Long): Result<Boolean> {
         return try {
-            codyRepository.toggleFixed(id)
-            Result.success(Unit)
+            val isFixed = codyRepository.toggleFixed(id)
+            Result.success(isFixed)
         } catch (e: Exception) {
             Result.failure(e)
         }

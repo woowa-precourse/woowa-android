@@ -53,9 +53,15 @@ class CodyListViewModel @Inject constructor(
         _uiState.update { it.copy(isEditMode = !it.isEditMode) }
     }
 
+    fun refreshCodies() {
+        loadCodies()
+    }
+
     fun deleteCody(codyId: Long) {
         viewModelScope.launch {
-            deleteCodyUseCase(codyId)
+            deleteCodyUseCase(codyId).onSuccess {
+                loadCodies()
+            }
         }
     }
 }
