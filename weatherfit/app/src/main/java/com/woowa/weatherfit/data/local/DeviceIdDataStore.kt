@@ -31,6 +31,7 @@ class DeviceIdDataStore @Inject constructor(
     }
 
     suspend fun getOrCreateDeviceId(): String {
+
         val currentId = getDeviceId().first()
         return if (currentId.isNotBlank()) {
             currentId
@@ -41,5 +42,6 @@ class DeviceIdDataStore @Inject constructor(
             }
             newId
         }
+
     }
 }

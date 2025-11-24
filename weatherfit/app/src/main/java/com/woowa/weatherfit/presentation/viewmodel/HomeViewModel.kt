@@ -98,8 +98,12 @@ class HomeViewModel @Inject constructor(
                 longitude = region.longitude,
                 locationName = region.name
             ).onSuccess { todayResponse ->
-                // 온도로부터 계절 계산
-                val temperatureRange = TemperatureRange.fromTemperature(todayResponse.current.temperature.toInt())
+                // 온도와 월 정보를 함께 고려하여 계절 계산
+                val currentMonth = java.time.LocalDate.now().monthValue
+                val temperatureRange = TemperatureRange.fromTemperatureAndMonth(
+                    todayResponse.current.temperature.toInt(),
+                    currentMonth
+                )
                 val season = Season.fromTemperatureRange(temperatureRange)
 
                 // Hourly 날씨 데이터 변환

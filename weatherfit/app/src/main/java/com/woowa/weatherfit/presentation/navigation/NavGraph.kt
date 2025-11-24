@@ -60,6 +60,7 @@ fun WeatherFitNavHost(
         ) {
             composable(Routes.Home.route) {
                 HomeScreen(
+                    navController = navController,
                     onNavigateToRegionSelect = {
                         navController.navigate(Routes.RegionSelect.route)
                     },
@@ -128,6 +129,7 @@ fun WeatherFitNavHost(
                 )
             ) {
                 CodyEditScreen(
+                    navController = navController,
                     onNavigateBack = { navController.popBackStack() }
                 )
             }
@@ -137,6 +139,7 @@ fun WeatherFitNavHost(
                 arguments = listOf(navArgument("codyId") { type = NavType.LongType })
             ) {
                 CodyDetailScreen(
+                    navController = navController,
                     onNavigateBack = { navController.popBackStack() },
                     onNavigateToCodyDetail = { codyId ->
                         navController.navigate(Routes.CodyDetail.createRoute(codyId))

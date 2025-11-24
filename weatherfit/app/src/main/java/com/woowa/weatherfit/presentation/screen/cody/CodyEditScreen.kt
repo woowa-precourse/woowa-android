@@ -102,6 +102,7 @@ import com.woowa.weatherfit.ui.theme.Primary
 @Composable
 fun CodyEditScreen(
     viewModel: CodyEditViewModel = hiltViewModel(),
+    navController: androidx.navigation.NavHostController,
     onNavigateBack: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -111,6 +112,8 @@ fun CodyEditScreen(
 
     LaunchedEffect(uiState.saveSuccess) {
         if (uiState.saveSuccess) {
+            // 저장 성공 시 홈 화면에 새로고침 필요 플래그 전달
+            navController.getBackStackEntry("home").savedStateHandle["needsRefresh"] = true
             onNavigateBack()
             viewModel.resetState()
         }

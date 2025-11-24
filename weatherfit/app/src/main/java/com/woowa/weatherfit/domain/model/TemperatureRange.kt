@@ -14,6 +14,31 @@ enum class TemperatureRange(
         fun fromTemperature(temp: Int): TemperatureRange {
             return entries.find { temp in it.minTemp..it.maxTemp } ?: COOL
         }
+
+        /**
+         * 온도와 월 정보를 함께 고려하여 계절을 판단합니다.
+         * 봄(10-15도 중심)과 가을(12-24도 범위)이 겹치는 구간은 월로 구분합니다.
+         *
+         * @param temp 현재 온도
+         * @param month 현재 월 (1-12)
+         * @return 해당하는 TemperatureRange
+         */
+        fun fromTemperatureAndMonth(temp: Int, month: Int): TemperatureRange {
+            return when {
+                temp >= 25 -> HOT // 25도 이상: 확실히 여름
+                temp < 10 -> COLD // 10도 미만: 확실히 겨울
+                temp in 10..24 -> { // 중간 온도: 월로 봄/가을 구분
+                    when (month) {
+                        3, 4, 5 -> COOL // 봄
+                        9, 10, 11 -> WARM // 가을
+                        6, 7, 8 -> HOT // 초여름
+                        12, 1, 2 -> COLD // 초겨울
+                        else -> COOL // fallback
+                    }
+                }
+                else -> COOL // fallback
+            }
+        }
     }
 }
 

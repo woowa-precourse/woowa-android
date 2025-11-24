@@ -64,6 +64,7 @@ import com.woowa.weatherfit.ui.theme.Primary
 @Composable
 fun CodyDetailScreen(
     viewModel: CodyDetailViewModel = hiltViewModel(),
+    navController: androidx.navigation.NavHostController,
     onNavigateBack: () -> Unit,
     onNavigateToCodyDetail: (Long) -> Unit = {},
     onNavigateToEdit: (Long) -> Unit = {}
@@ -107,7 +108,13 @@ fun CodyDetailScreen(
                             Icon(Icons.Default.Edit, "Edit", tint = Primary)
                         }
                     }
-                    IconButton(onClick = { viewModel.deleteCody(onNavigateBack) }) {
+                    IconButton(onClick = {
+                        viewModel.deleteCody {
+                            // 삭제 성공 시 홈 화면에 새로고침 필요 플래그 전달
+                            navController.getBackStackEntry("home").savedStateHandle["needsRefresh"] = true
+                            onNavigateBack()
+                        }
+                    }) {
                         Icon(Icons.Default.Delete, "Delete", tint = Color.Red)
                     }
                 }

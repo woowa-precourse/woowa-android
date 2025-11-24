@@ -60,6 +60,7 @@ import com.woowa.weatherfit.ui.theme.WeatherGradientStart
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel(),
+    navController: androidx.navigation.NavHostController,
     onNavigateToRegionSelect: () -> Unit,
     onNavigateToCodyDetail: (Long) -> Unit
 ) {
@@ -90,6 +91,20 @@ fun HomeScreen(
             viewModel.updateLocationToCurrentPosition {
                 viewModel.startObservingRegion()
             }
+        }
+    }
+
+    // Navigation Result: 코디 수정/삭제 성공 시에만 데이터 새로고침
+    val needsRefresh = navController.currentBackStackEntry
+        ?.savedStateHandle
+        ?.getStateFlow("needsRefresh", false)
+        ?.collectAsStateWithLifecycle()
+
+    LaunchedEffect(needsRefresh?.value) {
+        if (needsRefresh?.value == true && hasInitialized.value) {
+            viewModel.refresh()
+            // 플래그 초기화
+            navController.currentBackStackEntry?.savedStateHandle?.set("needsRefresh", false)
         }
     }
 
